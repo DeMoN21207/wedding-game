@@ -1,4 +1,5 @@
 from io import BytesIO
+from types import SimpleNamespace
 from zipfile import ZipFile
 
 from conftest import create_event, create_guest
@@ -147,6 +148,23 @@ def test_admin_can_download_active_photos_as_zip_archive(client):
         assert any(f"{first['id']:06d}" in name and name.endswith(".jpg") for name in names)
         assert any(f"{second['id']:06d}" in name and name.endswith(".jpg") for name in names)
         assert not any(f"{trashed['id']:06d}" in name for name in names)
+
+
+def test_admin_archive_refuses_when_disk_space_is_too_low(client, monkeypatch):
+    from conftest import login_admin
+
+    from app.routers import admin as admin_router
+
+    event = create_event(client, "Архив без места")
+    guest = create_guest(client, event["token"], "Аня")
+    upload_photo(client, guest["guest_token"], image_bytes(), "anya.jpg")
+    monkeypatch.setattr(admin_router.shutil, "disk_usage", lambda _: SimpleNamespace(free=1024))
+
+    login_admin(client)
+    response = client.get("/api/admin/photos/archive.zip")
+
+    assert response.status_code == 507
+    assert response.json()["detail"]["code"] == "ARCHIVE_NOT_ENOUGH_SPACE"
 
 
 def test_admin_can_permanently_delete_trashed_photo_files(client):

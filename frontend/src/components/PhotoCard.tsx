@@ -1,7 +1,6 @@
 import { Play, Trash2, Video } from "lucide-react";
 import { memo } from "react";
-import { AuthorizedImage } from "./AuthorizedImage";
-import type { Photo } from "../api/client";
+import { appPath, type Photo } from "../api/client";
 
 type Props = {
   photo: Photo;
@@ -23,7 +22,17 @@ export const PhotoCard = memo(function PhotoCard({ photo, onDelete, onOpen }: Pr
             <Play size={18} fill="currentColor" />
           </div>
         ) : (
-          <AuthorizedImage className="photo-thumb" src={thumbUrl} alt={`Фото ${photo.number}`} />
+          thumbUrl ? (
+            <img
+              className="photo-thumb"
+              src={appPath(thumbUrl)}
+              alt={`Фото ${photo.number}`}
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div className="image-placeholder photo-thumb">Фото</div>
+          )
         )}
       </button>
       <div className="photo-meta">

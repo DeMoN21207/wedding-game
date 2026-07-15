@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import shutil
 from datetime import datetime
 from functools import lru_cache
 from io import BytesIO
@@ -27,6 +28,36 @@ from ..slug import unique_slug
 from ..storage import absolute_from_data, delete_photo_files, move_photo_to_trash, restore_photo_from_trash
 
 router = APIRouter(prefix="/admin")
+
+ARCHIVE_FREE_SPACE_RESERVE_BYTES = 5 * 1024 * 1024 * 1024
+ARCHIVE_ZIP_OVERHEAD_BYTES = 64 * 1024 * 1024
+
+
+def human_size(value: int) -> str:
+    """Форматирует байты в короткий человекочитаемый размер."""
+
+    if value >= 1024 * 1024 * 1024:
+        return f"{value / (1024 * 1024 * 1024):.1f} ГБ"
+    return f"{value / (1024 * 1024):.0f} МБ"
+
+
+def ensure_archive_disk_space(settings: Settings, photos: list[Photo]) -> None:
+    """Проверяет, что ZIP-архив не заполнит диск во время сборки."""
+
+    archive_bytes = sum(photo.size_bytes for photo in photos) + ARCHIVE_ZIP_OVERHEAD_BYTES
+    required_free = archive_bytes + ARCHIVE_FREE_SPACE_RESERVE_BYTES
+    free_bytes = shutil.disk_usage(settings.data_dir).free
+    if free_bytes >= required_free:
+        return
+
+    raise api_error(
+        507,
+        "ARCHIVE_NOT_ENOUGH_SPACE",
+        (
+            "Недостаточно места для сборки архива: нужно примерно "
+            f"{human_size(required_free)}, доступно {human_size(free_bytes)}."
+        ),
+    )
 
 
 def event_out(event: Event, db: Session) -> EventOut:
@@ -310,6 +341,7 @@ def download_photos_archive(
     if status != "all":
         query = query.filter(Photo.status == status)
     photos = query.order_by(Guest.created_at.asc(), Photo.number.asc(), Photo.id.asc()).all()
+    ensure_archive_disk_space(settings, photos)
 
     tmp_dir = settings.data_dir / "tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
