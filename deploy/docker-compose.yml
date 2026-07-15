@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        VITE_APP_BASE_PATH: ${VITE_APP_BASE_PATH:-/events/}
+        VITE_ALBUM_TITLE: ${VITE_ALBUM_TITLE:-Свадебный альбом}
+        VITE_MAX_UPLOAD_BYTES: ${VITE_MAX_UPLOAD_BYTES:-314572800}
+        VITE_SHARE_TITLE: ${VITE_SHARE_TITLE:-Свадебное фото}
+    restart: unless-stopped
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ../data/db:/data/db
+      - ../data/uploads:/data/uploads
+      - ../data/tmp:/data/tmp

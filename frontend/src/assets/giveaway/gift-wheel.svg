@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="wheel-gift-stroke" x1="14" y1="54" x2="50" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF342F"/>
+      <stop offset="1" stop-color="#FF7441"/>
+    </linearGradient>
+  </defs>
+  <g stroke="url(#wheel-gift-stroke)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 31H46V49C46 52.9 42.9 56 39 56H25C21.1 56 18 52.9 18 49V31Z"/>
+    <path d="M14 25H50V31H14V25Z"/>
+    <path d="M32 25V56"/>
+    <path d="M32 25C27.1 17.8 20.1 16.5 17.6 20.2C15.3 23.5 21.4 27.5 32 25Z"/>
+    <path d="M32 25C36.9 17.8 43.9 16.5 46.4 20.2C48.7 23.5 42.6 27.5 32 25Z"/>
+  </g>
+</svg>

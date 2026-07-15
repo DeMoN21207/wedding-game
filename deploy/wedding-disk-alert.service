@@ -1,0 +1,9 @@
+[Unit]
+Description=Alert when wedding media disk is almost full
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/wedding-events-ops.env
+ExecStart=/usr/local/sbin/wedding-disk-alert

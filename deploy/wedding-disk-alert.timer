@@ -1,0 +1,11 @@
+[Unit]
+Description=Check wedding media disk space every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Unit=wedding-disk-alert.service
+
+[Install]
+WantedBy=timers.target

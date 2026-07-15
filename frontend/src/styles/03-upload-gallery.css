@@ -1,0 +1,461 @@
+
+.moments-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.moments-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: oklch(30% 0.028 35);
+  background: oklch(99% 0.006 58 / 0.97);
+  border: 1px solid oklch(91% 0.014 48 / 0.82);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px oklch(29% 0.035 32 / 0.1);
+  cursor: pointer;
+  transform: translateY(-50%);
+  backdrop-filter: none;
+  contain: paint;
+}
+
+.moments-arrow:hover {
+  color: var(--rose);
+  border-color: oklch(80% 0.06 25 / 0.6);
+}
+
+.moments-arrow:focus-visible {
+  outline: 3px solid oklch(74% 0.12 78 / 0.7);
+  outline-offset: 3px;
+}
+
+.moments-arrow-left {
+  left: 12px;
+}
+
+.moments-arrow-right {
+  right: 12px;
+}
+
+.moments-slider-frame {
+  position: relative;
+  z-index: 1;
+  contain: layout paint;
+}
+
+.moments-swiper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding-inline: 2px;
+  overflow: visible;
+  contain: layout paint;
+}
+
+.moments-swiper .swiper-wrapper {
+  will-change: transform;
+}
+
+.moments-swiper .moments-slide {
+  flex: 0 0 auto;
+  width: clamp(292px, 22vw, 340px);
+  contain: layout paint;
+}
+
+.moments-photo-button,
+.moments-photo-placeholder {
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  background: oklch(94% 0.018 75);
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  line-height: 0;
+}
+
+.moments-photo-button img,
+.moments-photo-placeholder,
+.moments-video-placeholder {
+  width: 100%;
+  aspect-ratio: 1.5;
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+}
+
+.moments-photo-button img {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.my-photos-section {
+  scroll-margin-top: 24px;
+}
+
+.album-topbar {
+  margin-bottom: 8px;
+}
+
+.album-topbar h1 {
+  font-size: clamp(2rem, 7vw, 3.25rem);
+}
+
+.album-shell .ornament-line.compact {
+  margin: 8px 0 0;
+}
+
+.album-command-card {
+  display: grid;
+  gap: 14px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 45px oklch(29% 0.035 32 / 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.album-command-card.is-authenticated {
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.album-command-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.album-command-card.is-authenticated .album-command-copy {
+  gap: 0;
+}
+
+.album-command-copy h2,
+.section-heading-row h2,
+.welcome-dialog h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  line-height: 1;
+}
+
+.album-command-copy h2 {
+  color: var(--rose);
+  font-size: 1.72rem;
+}
+
+.album-compact-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.album-command-card.is-authenticated .album-compact-stats {
+  margin-top: 0;
+}
+
+.album-mini-stat {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  color: var(--rose);
+  background: oklch(99% 0.006 58 / 0.82);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.album-gallery-pill {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  color: oklch(99% 0.008 55);
+  background: var(--rose);
+  border: 1px solid var(--rose);
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 22px oklch(55% 0.12 22 / 0.18);
+}
+
+.album-gallery-pill svg {
+  flex: 0 0 auto;
+}
+
+.album-mini-stat span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.album-mini-stat strong {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.album-command-card.is-authenticated .album-mini-stat {
+  min-width: 52px;
+  justify-content: center;
+  padding: 6px 10px;
+}
+
+.album-command-card.is-authenticated .album-mini-stat span {
+  display: none;
+}
+
+.album-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.album-actions .upload-panel {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.album-actions .upload-choice-row {
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.86fr);
+}
+
+.album-actions .upload-library-button {
+  width: 100%;
+}
+
+.album-actions .primary-action,
+.album-actions .upload-library-button {
+  min-height: 46px;
+  font-size: 0.96rem;
+}
+
+.album-actions .primary-action svg,
+.album-actions .upload-library-button svg {
+  flex: 0 0 auto;
+}
+
+.album-actions .upload-choice-row .primary-action span,
+.album-actions .upload-library-button span {
+  white-space: normal;
+}
+
+.album-actions > .primary-action {
+  flex: 1;
+}
+
+.album-dashboard-card {
+  margin-left: 0;
+  margin-top: 12px;
+  gap: 18px;
+  padding: 16px;
+}
+
+.my-photos-section {
+  margin-top: 18px;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-heading-row h2 {
+  font-size: 1.75rem;
+}
+
+.section-heading-row span {
+  color: var(--muted);
+}
+
+.wedding-photo-grid .photo-card {
+  border-radius: 7px;
+}
+
+.wedding-photo-grid .photo-thumb-button {
+  border-radius: 7px;
+}
+
+.wedding-photo-grid .photo-thumb,
+.wedding-photo-grid .image-placeholder {
+  aspect-ratio: 1.08;
+}
+
+.wedding-photo-grid .photo-meta {
+  min-height: 34px;
+  padding: 5px 6px;
+  font-size: 0.78rem;
+}
+
+.wedding-photo-grid .icon-button {
+  width: 30px;
+  height: 30px;
+}
+
+.welcome-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  overflow-y: auto;
+  background: oklch(25% 0.028 36 / 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.welcome-dialog {
+  width: min(420px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: grid;
+  gap: 13px;
+  padding: 20px;
+  overflow-y: auto;
+  background: var(--panel-solid);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.welcome-dialog h2 {
+  color: var(--rose);
+  font-size: 2.4rem;
+}
+
+.welcome-dialog p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.entry-form,
+.upload-panel,
+.admin-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.entry-form {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+label {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 13px;
+  background: oklch(99% 0.006 58);
+  color: var(--ink);
+  outline: none;
+  font-size: 1rem;
+}
+
+input:focus {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 3px oklch(55% 0.12 22 / 0.16);
+}
+
+.primary-action,
+.icon-text-button,
+.icon-button,
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+}
+
+.primary-action span,
+.icon-text-button span,
+.tab span {
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  text-align: center;
+}
+
+.primary-action {
+  min-height: 52px;
+  padding: 0 18px;
+  background: linear-gradient(180deg, oklch(61% 0.115 22), var(--rose));
+  color: oklch(99% 0.008 55);
+  font-weight: 700;
+  box-shadow: 0 12px 28px oklch(55% 0.12 22 / 0.22);
+}
+
+.icon-button {
+  width: 42px;
+  height: 42px;
+  background: oklch(99% 0.006 58);
+  border: 1px solid var(--line);
+}
+
+.icon-text-button {
+  min-height: 36px;
+  padding: 0 12px;
+  background: oklch(95% 0.024 72);
+  color: var(--rose);
+  font-weight: 700;
+}
+
+.icon-button,
+.icon-text-button {
+  text-decoration: none;
+}
+
+.quiet-link {
+  background: oklch(99% 0.006 58);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+@media (pointer: coarse) {
+  .primary-action {
+    min-height: 54px;
+  }
+
+  .icon-button {
+    width: 46px;
+    height: 46px;
+  }
+
+  .icon-text-button {
+    min-height: 44px;
+  }
+
+  .tab {
+    min-height: 48px;
+  }
+}

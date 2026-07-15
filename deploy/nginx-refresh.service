@@ -1,0 +1,8 @@
+[Unit]
+Description=Gracefully refresh nginx workers
+After=nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nginx -t
+ExecStart=/bin/systemctl reload nginx

@@ -1,0 +1,8 @@
+[Unit]
+Description=Wedding site healthcheck
+Wants=network-online.target
+After=network-online.target nginx.service wedding-events.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/wedding-events-healthcheck

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run wedding site healthcheck every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Unit=wedding-healthcheck.service
+
+[Install]
+WantedBy=timers.target
