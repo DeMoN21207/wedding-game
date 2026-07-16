@@ -1,16 +1,30 @@
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 
 
-class EventCreate(BaseModel):
+class ApiModel(BaseModel):
+    """Базовая API-схема с безопасной JSON-сериализацией UTC-времени."""
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, value: Any) -> Any:
+        """Добавляет UTC-зону к naive datetime, чтобы браузер не считал его локальным."""
+
+        if not isinstance(value, datetime):
+            return value
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc).isoformat()
+        return value.astimezone(timezone.utc).isoformat()
+
+
+class EventCreate(ApiModel):
     """Запрос на создание события в админке."""
 
     name: str
 
 
-class EventOut(BaseModel):
+class EventOut(ApiModel):
     """Событие в админке со счетчиками гостей и фото."""
 
     id: int
@@ -22,28 +36,28 @@ class EventOut(BaseModel):
     created_at: datetime
 
 
-class EventQrOut(BaseModel):
+class EventQrOut(ApiModel):
     """QR-ссылка и PNG-картинка в формате data URL."""
 
     url: str
     qr_png_base64: str
 
 
-class EventPublicOut(BaseModel):
+class EventPublicOut(ApiModel):
     """Публичные данные события по токену QR."""
 
     name: str
     token: str
 
 
-class GuestCreate(BaseModel):
+class GuestCreate(ApiModel):
     """Запрос гостя на вход по нику."""
 
     nickname: str
     event_token: Optional[str] = None
 
 
-class GuestCreated(BaseModel):
+class GuestCreated(ApiModel):
     """Ответ после входа гостя с токеном для localStorage."""
 
     guest_token: str
@@ -52,7 +66,7 @@ class GuestCreated(BaseModel):
     avatar_index: int
 
 
-class MeOut(BaseModel):
+class MeOut(ApiModel):
     """Профиль текущего гостя."""
 
     nickname: str
@@ -61,13 +75,13 @@ class MeOut(BaseModel):
     active_photo_count: int
 
 
-class AdminLogin(BaseModel):
+class AdminLogin(ApiModel):
     """Запрос входа в админку."""
 
     password: str
 
 
-class PhotoOut(BaseModel):
+class PhotoOut(ApiModel):
     """Фото в персональной галерее гостя."""
 
     id: int
@@ -79,7 +93,7 @@ class PhotoOut(BaseModel):
     status: str = "active"
 
 
-class AlbumPhotoOut(BaseModel):
+class AlbumPhotoOut(ApiModel):
     """Фото на главном дашборде и в последних моментах."""
 
     id: int
@@ -92,7 +106,7 @@ class AlbumPhotoOut(BaseModel):
     created_at: datetime
 
 
-class AlbumContributorOut(BaseModel):
+class AlbumContributorOut(ApiModel):
     """Гость в кратком рейтинге альбома."""
 
     nickname: str
@@ -102,7 +116,7 @@ class AlbumContributorOut(BaseModel):
     created_at: datetime
 
 
-class AlbumOut(BaseModel):
+class AlbumOut(ApiModel):
     """Публичный дашборд общего альбома."""
 
     name: str
@@ -116,7 +130,7 @@ class AlbumOut(BaseModel):
     top_guests: list[AlbumContributorOut]
 
 
-class RatingGuestOut(BaseModel):
+class RatingGuestOut(ApiModel):
     """Строка отдельной страницы рейтинга."""
 
     rank: int
@@ -128,7 +142,7 @@ class RatingGuestOut(BaseModel):
     created_at: datetime
 
 
-class RatingOut(BaseModel):
+class RatingOut(ApiModel):
     """Полный публичный рейтинг гостей."""
 
     total_photos: int
@@ -136,7 +150,7 @@ class RatingOut(BaseModel):
     guests: list[RatingGuestOut]
 
 
-class GalleryPhotoOut(BaseModel):
+class GalleryPhotoOut(ApiModel):
     """Фото в общей галерее со ссылкой скачивания."""
 
     id: int
@@ -150,7 +164,7 @@ class GalleryPhotoOut(BaseModel):
     created_at: datetime
 
 
-class GalleryOut(BaseModel):
+class GalleryOut(ApiModel):
     """Страница общей галереи с пагинацией."""
 
     photos: list[GalleryPhotoOut]
@@ -160,7 +174,7 @@ class GalleryOut(BaseModel):
     has_more: bool
 
 
-class AdminGuestOut(BaseModel):
+class AdminGuestOut(ApiModel):
     """Гость в админской таблице."""
 
     id: int
@@ -172,7 +186,7 @@ class AdminGuestOut(BaseModel):
     created_at: datetime
 
 
-class AdminPhotoOut(BaseModel):
+class AdminPhotoOut(ApiModel):
     """Фото в админке, включая ссылку на оригинал."""
 
     id: int
