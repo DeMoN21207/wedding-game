@@ -504,24 +504,45 @@
   }
 
   .gallery-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
   }
 
   .gallery-toolbar {
     flex-wrap: wrap;
   }
 
+  .gallery-card-thumb {
+    aspect-ratio: 4 / 5;
+  }
+
+  .gallery-card-thumb img,
+  .gallery-card-placeholder,
+  .gallery-card-video {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
   .gallery-card-meta {
-    right: 4px;
-    bottom: 4px;
-    left: 4px;
-    min-height: 34px;
-    padding: 5px;
+    position: static;
+    min-height: 48px;
+    padding: 8px 9px;
+    background: oklch(99% 0.006 58 / 0.94);
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .gallery-card-meta span {
-    display: none;
+    display: block;
+    font-size: 0.66rem;
+  }
+
+  .gallery-card-meta .icon-button {
+    width: 38px;
+    height: 38px;
   }
 
   .rating-summary-grid {

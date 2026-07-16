@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 const foundationStyles = readFileSync(new URL("./01-foundation.css", import.meta.url), "utf8");
+const responsiveStyles = readFileSync(new URL("./06-responsive.css", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../main.tsx", import.meta.url), "utf8");
 
 describe("frontend performance safeguards", () => {
@@ -15,5 +16,14 @@ describe("frontend performance safeguards", () => {
     expect(mainSource).toContain("navigator.hardwareConcurrency");
     expect(mainSource).toContain('document.documentElement.classList.add("lite")');
     expect(foundationStyles).toMatch(/html\.lite \*\s*\{[^}]*backdrop-filter:\s*none !important;[^}]*-webkit-backdrop-filter:\s*none !important;/s);
+  });
+
+  it("держит мобильную галерею крупной и не закрывает фото подписью", () => {
+    expect(responsiveStyles).toContain(`.gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }`);
+    expect(responsiveStyles).toContain(`.gallery-card-meta {
+    position: static;`);
   });
 });

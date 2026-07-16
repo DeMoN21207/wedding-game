@@ -81,6 +81,8 @@
 .gallery-card-thumb {
   display: block;
   width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
   padding: 0;
   background: transparent;
   border: 0;
@@ -99,6 +101,10 @@
   object-fit: cover;
   background: linear-gradient(135deg, oklch(94% 0.016 72), oklch(90% 0.026 126));
   color: var(--muted);
+}
+
+.gallery-card-thumb img {
+  height: 100%;
 }
 
 .gallery-card-meta {
