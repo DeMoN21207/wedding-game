@@ -18,10 +18,18 @@ describe("frontend performance safeguards", () => {
     expect(foundationStyles).toMatch(/html\.lite \*\s*\{[^}]*backdrop-filter:\s*none !important;[^}]*-webkit-backdrop-filter:\s*none !important;/s);
   });
 
-  it("держит мобильную галерею крупной и не закрывает фото подписью", () => {
+  it("показывает мобильную галерею masonry без растягивания фото", () => {
     expect(responsiveStyles).toContain(`.gallery-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
+    display: block;
+    column-count: 2;
+    column-gap: 9px;
+  }`);
+    expect(responsiveStyles).toContain(`.gallery-card-thumb img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: auto;
+    display: block;
+    object-fit: contain;
   }`);
     expect(responsiveStyles).toContain(`.gallery-card-meta {
     position: static;`);

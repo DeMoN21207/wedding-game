@@ -34,7 +34,6 @@ const GalleryCard = memo(function GalleryCard({ photo, onOpenPhoto, priority = f
               decoding="async"
               fetchPriority={priority ? "high" : "auto"}
               width={640}
-              height={640}
             />
           )}
         </button>
