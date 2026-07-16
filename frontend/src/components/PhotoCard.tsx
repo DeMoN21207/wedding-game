@@ -29,6 +29,8 @@ export const PhotoCard = memo(function PhotoCard({ photo, onDelete, onOpen }: Pr
               alt={`Фото ${photo.number}`}
               loading="lazy"
               decoding="async"
+              width={640}
+              height={640}
             />
           ) : (
             <div className="image-placeholder photo-thumb">Фото</div>

@@ -88,7 +88,7 @@ export const DashboardRecent = memo(function DashboardRecent({ photos, loading, 
             autoplay={visiblePhotos.length > 1 ? { delay: 2600, disableOnInteraction: false, pauseOnMouseEnter: true } : false}
             a11y={{ enabled: true }}
           >
-            {visiblePhotos.map((photo) => (
+            {visiblePhotos.map((photo, index) => (
               <SwiperSlide className="moments-slide" key={photo.id}>
                 {photo.thumbnail_url || photo.preview_url ? (
                   <button className="moments-photo-button" type="button" title="Открыть файл" onClick={() => onOpenPhoto(photo)}>
@@ -101,8 +101,11 @@ export const DashboardRecent = memo(function DashboardRecent({ photos, loading, 
                       <img
                         src={appPath(photo.thumbnail_url ?? photo.preview_url ?? "")}
                         alt={`${photo.guest_nickname}, фото ${photo.number}`}
-                        loading="lazy"
+                        loading={index < 4 ? "eager" : "lazy"}
                         decoding="async"
+                        fetchPriority={index < 4 ? "high" : "auto"}
+                        width={640}
+                        height={640}
                       />
                     )}
                   </button>

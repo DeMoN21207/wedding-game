@@ -226,10 +226,10 @@ def save_preview(original: Path, preview: Path) -> None:
 
 
 def save_thumbnail(source: Path, thumbnail: Path) -> None:
-    """Создает маленький JPEG-thumbnail для сеток и слайдеров, чтобы не декодировать большие превью."""
+    """Создает маленький WebP-thumbnail для сеток и слайдеров, чтобы быстрее декодировать галерею."""
 
     thumbnail.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(source) as image:
         image = image_as_rgb(image)
         image.thumbnail((640, 640))
-        image.save(thumbnail, format="JPEG", quality=76, optimize=True, progressive=True)
+        image.save(thumbnail, format="WEBP", quality=76, method=4)

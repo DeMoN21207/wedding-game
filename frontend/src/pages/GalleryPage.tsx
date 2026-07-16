@@ -10,9 +10,10 @@ const PAGE_SIZE = 48;
 type GalleryCardProps = {
   photo: GalleryPhoto;
   onOpenPhoto: (photo: GalleryPhoto) => void;
+  priority?: boolean;
 };
 
-const GalleryCard = memo(function GalleryCard({ photo, onOpenPhoto }: GalleryCardProps) {
+const GalleryCard = memo(function GalleryCard({ photo, onOpenPhoto, priority = false }: GalleryCardProps) {
   const thumbUrl = photo.thumbnail_url ?? photo.preview_url;
   const isVideo = photo.media_type === "video";
 
@@ -26,7 +27,15 @@ const GalleryCard = memo(function GalleryCard({ photo, onOpenPhoto }: GalleryCar
               <Play size={20} fill="currentColor" />
             </div>
           ) : (
-            <img src={appPath(thumbUrl ?? "")} alt={`${photo.guest_nickname}, фото ${photo.number}`} loading="lazy" decoding="async" />
+            <img
+              src={appPath(thumbUrl ?? "")}
+              alt={`${photo.guest_nickname}, фото ${photo.number}`}
+              loading={priority ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={priority ? "high" : "auto"}
+              width={640}
+              height={640}
+            />
           )}
         </button>
       ) : (
@@ -137,8 +146,8 @@ export function GalleryPage() {
       {error && <p className="form-error">{error}</p>}
 
       <section className="gallery-grid" aria-live="polite">
-        {photos.map((photo) => (
-          <GalleryCard key={photo.id} photo={photo} onOpenPhoto={openPhoto} />
+        {photos.map((photo, index) => (
+          <GalleryCard key={photo.id} photo={photo} onOpenPhoto={openPhoto} priority={index < 6} />
         ))}
         {!loading && photos.length === 0 && <div className="empty-state">Пока никто не загрузил фото или видео.</div>}
         {loading && photos.length === 0 && <div className="empty-state">Загружаем галерею...</div>}

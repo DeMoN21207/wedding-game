@@ -34,6 +34,7 @@ from ..schemas import PhotoOut
 from ..storage import (
     absolute_from_data,
     ensure_guest_dirs,
+    legacy_thumbnail_path,
     move_photo_to_trash,
     original_path,
     preview_path,
@@ -303,12 +304,14 @@ def active_photo_or_404(photo_id: int, db: Session) -> Photo:
 
 
 def ensure_thumbnail(settings: Settings, photo: Photo) -> Path:
-    """Возвращает thumbnail, создавая его из превью для старых фото без отдельной миграции."""
+    """Возвращает WebP-thumbnail, создавая его из превью для старых фото без отдельной миграции."""
 
     if not photo.preview_path:
         raise api_error(404, "THUMBNAIL_NOT_FOUND", "Thumbnail еще не готов.")
     thumbnail = thumbnail_path(settings, photo.guest, photo.number)
+    legacy_thumbnail = legacy_thumbnail_path(settings, photo.guest, photo.number)
     if thumbnail.exists():
+        legacy_thumbnail.unlink(missing_ok=True)
         return thumbnail
     preview = absolute_from_data(settings, photo.preview_path)
     if not preview.exists():
@@ -316,6 +319,7 @@ def ensure_thumbnail(settings: Settings, photo: Photo) -> Path:
     with thumbnail_semaphore:
         if not thumbnail.exists():
             save_thumbnail(preview, thumbnail)
+            legacy_thumbnail.unlink(missing_ok=True)
     return thumbnail
 
 

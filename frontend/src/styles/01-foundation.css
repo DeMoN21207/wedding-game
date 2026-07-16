@@ -101,12 +101,39 @@ button:disabled {
   contain: layout paint style;
 }
 
+.photo-card,
+.gallery-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+}
+
 .my-photos-section,
 .gallery-grid,
 .rating-list-card,
 .admin-photo-grid {
   content-visibility: auto;
   contain-intrinsic-size: 640px;
+}
+
+html.lite * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.lite {
+  --shadow: 0 14px 34px oklch(29% 0.035 32 / 0.08);
+}
+
+html.lite body {
+  background:
+    linear-gradient(125deg, oklch(99% 0.01 58), oklch(97% 0.019 32) 52%, oklch(99% 0.012 80)),
+    var(--paper);
+}
+
+html.lite body::before,
+html.lite .wedding-screen::after,
+html.lite .wedding-admin-screen::after {
+  display: none;
 }
 
 .guest-shell,

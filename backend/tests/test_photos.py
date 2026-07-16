@@ -111,8 +111,9 @@ def test_album_guest_gets_small_thumbnail_for_grid(client):
     response = client.get(f"/media/thumbs/{uploaded['id']}")
 
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("image/")
+    assert response.headers["content-type"].startswith("image/webp")
     thumbnail = Image.open(BytesIO(response.content))
+    assert thumbnail.format == "WEBP"
     assert max(thumbnail.size) <= 640
 
 

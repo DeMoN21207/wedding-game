@@ -54,10 +54,23 @@ def preview_path(settings: Settings, guest: Guest, number: int) -> Path:
 
 
 def thumbnail_path(settings: Settings, guest: Guest, number: int) -> Path:
-    """Строит путь маленького JPEG-thumbnail для карточек и слайдеров."""
+    """Строит путь маленького WebP-thumbnail для карточек и слайдеров."""
+
+    ensure_guest_dirs(settings, guest)
+    return guest_root(settings, guest) / "thumbs" / f"{guest.slug}_{number:03d}.webp"
+
+
+def legacy_thumbnail_path(settings: Settings, guest: Guest, number: int) -> Path:
+    """Строит старый путь JPEG-thumbnail, чтобы убирать хвосты после перехода на WebP."""
 
     ensure_guest_dirs(settings, guest)
     return guest_root(settings, guest) / "thumbs" / f"{guest.slug}_{number:03d}.jpg"
+
+
+def thumbnail_paths(settings: Settings, guest: Guest, number: int) -> tuple[Path, Path]:
+    """Возвращает актуальный и старый thumbnail-пути для операций очистки и корзины."""
+
+    return thumbnail_path(settings, guest, number), legacy_thumbnail_path(settings, guest, number)
 
 
 def trash_path(settings: Settings, path: Path) -> Path:
@@ -102,8 +115,8 @@ def move_photo_to_trash(settings: Settings, photo: Photo) -> None:
         preview = absolute_from_data(settings, photo.preview_path)
         new_preview = move_file(preview, trash_path(settings, preview))
         photo.preview_path = relative_to_data(settings, new_preview)
-        thumbnail = thumbnail_path(settings, photo.guest, photo.number)
-        move_file(thumbnail, trash_path(settings, thumbnail))
+        for thumbnail in thumbnail_paths(settings, photo.guest, photo.number):
+            move_file(thumbnail, trash_path(settings, thumbnail))
 
 
 def restore_photo_from_trash(settings: Settings, photo: Photo) -> None:
@@ -116,8 +129,9 @@ def restore_photo_from_trash(settings: Settings, photo: Photo) -> None:
         preview = absolute_from_data(settings, photo.preview_path)
         new_preview = move_file(preview, restore_path(settings, preview))
         photo.preview_path = relative_to_data(settings, new_preview)
-        thumbnail = trash_path(settings, thumbnail_path(settings, photo.guest, photo.number))
-        move_file(thumbnail, restore_path(settings, thumbnail))
+        for active_thumbnail in thumbnail_paths(settings, photo.guest, photo.number):
+            thumbnail = trash_path(settings, active_thumbnail)
+            move_file(thumbnail, restore_path(settings, thumbnail))
 
 
 def delete_file(path: Optional[Path]) -> None:
@@ -134,6 +148,6 @@ def delete_photo_files(settings: Settings, photo: Photo) -> None:
     if photo.preview_path:
         delete_file(absolute_from_data(settings, photo.preview_path))
 
-    active_thumbnail = thumbnail_path(settings, photo.guest, photo.number)
-    delete_file(active_thumbnail)
-    delete_file(trash_path(settings, active_thumbnail))
+    for active_thumbnail in thumbnail_paths(settings, photo.guest, photo.number):
+        delete_file(active_thumbnail)
+        delete_file(trash_path(settings, active_thumbnail))
