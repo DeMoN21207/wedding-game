@@ -484,11 +484,18 @@ export function RafflePage() {
               </svg>
             </div>
             <svg className="giveaway-wheel-overlay" viewBox="0 0 600 600" aria-hidden="true">
+              <defs>
+                <radialGradient id="giveaway-wheel-light-gradient" cx="50%" cy="50%" r="55%">
+                  <stop offset="0%" stopColor="oklch(100% 0.012 78)" />
+                  <stop offset="58%" stopColor="oklch(99% 0.034 76)" />
+                  <stop offset="100%" stopColor="oklch(89% 0.105 74)" stopOpacity="0.32" />
+                </radialGradient>
+              </defs>
               <g className="giveaway-wheel-lights">
                 {Array.from({ length: 32 }).map((_, index) => {
                   const angle = (index / 32) * 360;
                   const point = polarToCartesian(286, angle);
-                  return <circle className="giveaway-wheel-light" cx={point.x} cy={point.y} key={index} r="5.5" />;
+                  return <circle className="giveaway-wheel-light" cx={point.x} cy={point.y} fill="url(#giveaway-wheel-light-gradient)" key={index} r="5.5" />;
                 })}
               </g>
               <circle className="giveaway-wheel-center" cx="300" cy="300" r="86" />

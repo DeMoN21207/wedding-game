@@ -219,13 +219,8 @@
   place-items: center;
   border-radius: 50%;
   contain: layout paint style;
-  filter: drop-shadow(0 28px 52px oklch(29% 0.035 32 / 0.14));
   isolation: isolate;
   transform: translateZ(0);
-}
-
-.giveaway-wheel-shell.is-spinning {
-  filter: drop-shadow(0 16px 30px oklch(29% 0.035 32 / 0.1));
 }
 
 .giveaway-wheel-shell::before {
@@ -236,7 +231,8 @@
   border-radius: inherit;
   box-shadow:
     0 0 0 9px oklch(89% 0.07 70 / 0.42),
-    inset 0 0 34px oklch(82% 0.12 72 / 0.28);
+    inset 0 0 34px oklch(82% 0.12 72 / 0.28),
+    0 28px 52px oklch(29% 0.035 32 / 0.14);
 }
 
 .giveaway-wheel-svg {
@@ -304,8 +300,8 @@
 }
 
 .giveaway-wheel-light {
-  fill: oklch(99% 0.034 76);
-  filter: drop-shadow(0 0 5px oklch(86% 0.12 74 / 0.72));
+  stroke: oklch(89% 0.105 74 / 0.38);
+  stroke-width: 1.35;
 }
 
 .giveaway-wheel-shell.is-spinning .giveaway-wheel-lights {
