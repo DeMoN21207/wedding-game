@@ -175,11 +175,6 @@
     border-left: 0;
   }
 
-  .hero-upload-divider {
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
-
   .hero-action-icon {
     width: 104px;
     height: 104px;

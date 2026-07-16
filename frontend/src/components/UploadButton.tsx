@@ -1,4 +1,4 @@
-import { Camera, CloudUpload, Download, Heart, ImagePlus, RefreshCw } from "lucide-react";
+import { Camera, CloudUpload, Download, ImagePlus, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { RequestError, uploadPhoto } from "../api/client";
 import { appConfig } from "../config/appConfig";
@@ -252,9 +252,6 @@ export const UploadButton = memo(function UploadButton({ onUploaded, autoOpenCam
               <span>Открыть камеру</span>
             </button>
             <small>Можно снять прямо сейчас</small>
-          </div>
-          <div className="hero-upload-divider" aria-hidden="true">
-            <Heart size={17} />
           </div>
           <div className="hero-upload-side hero-upload-library">
             <div className="hero-action-icon hero-action-icon-red" aria-hidden="true">
