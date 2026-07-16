@@ -60,7 +60,7 @@ openssl_probe() {
   hostnamectl || true
   uptime || true
 
-  run_cmd systemctl --no-pager --full status nginx wedding-events wedding-site wedding-healthcheck.timer nginx-refresh.timer
+  run_cmd systemctl --no-pager --full status nginx wedding-events wedding-site wedding-healthcheck.timer
   run_cmd free -h
   run_cmd df -h /
   run_cmd ps -eo pid,ppid,user,comm,rss,%mem,%cpu,etime --sort=-rss
@@ -87,7 +87,7 @@ openssl_probe() {
   openssl_probe "event-public-ip" "${PUBLIC_IP}:443" "${EVENT_DOMAIN}"
   openssl_probe "event-loopback" "127.0.0.1:443" "${EVENT_DOMAIN}"
 
-  run_cmd journalctl -u nginx -u wedding-events -u wedding-site -u wedding-healthcheck.service -u nginx-refresh.service --since "30 min ago" --no-pager
+  run_cmd journalctl -u nginx -u wedding-events -u wedding-site -u wedding-healthcheck.service --since "30 min ago" --no-pager
   run_cmd journalctl -k --since "30 min ago" --no-pager
 
   section "nginx error tails"

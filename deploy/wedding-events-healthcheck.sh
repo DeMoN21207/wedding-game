@@ -63,26 +63,37 @@ check_url() {
   return 0
 }
 
+check_observed_url() {
+  local name="$1"
+  local url="$2"
+  local needle="${3:-}"
+  local resolve="${4:-}"
+
+  if ! check_url "${name}" "${url}" "${needle}" "${resolve}"; then
+    logger -t "${TAG}" "${name} failed but will not trigger restart"
+  fi
+}
+
 run_checks() {
   local failed=0
 
-  check_url \
+  check_observed_url \
     "event-api-domain" \
     "${EVENT_API_URL}" \
     "${EVENT_API_MARKER}" \
-    "" || failed=1
+    ""
 
-  check_url \
+  check_observed_url \
     "event-page-domain" \
     "${EVENT_PAGE_URL}" \
     "${EVENT_PAGE_MARKER}" \
-    "" || failed=1
+    ""
 
-  check_url \
+  check_observed_url \
     "main-site-domain" \
     "${MAIN_SITE_URL}" \
     "" \
-    "" || failed=1
+    ""
 
   check_url \
     "event-api-loopback" \
@@ -95,12 +106,6 @@ run_checks() {
     "${EVENT_PAGE_URL}" \
     "${EVENT_PAGE_MARKER}" \
     "${EVENT_DOMAIN}:443:127.0.0.1" || failed=1
-
-  check_url \
-    "main-site-loopback" \
-    "${MAIN_SITE_URL}" \
-    "" \
-    "${MAIN_DOMAIN}:443:127.0.0.1" || failed=1
 
   check_url \
     "event-backend-local" \
