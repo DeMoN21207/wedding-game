@@ -1,5 +1,5 @@
 import { PartyPopper, RefreshCw, RotateCcw, Star, X } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type TransitionEvent } from "react";
 import { getRating, type Rating } from "../api/client";
 import giftIcon from "../assets/giveaway/gift-reference.png";
 import playWhiteIcon from "../assets/giveaway/play-white.svg";
@@ -41,7 +41,6 @@ const WHEEL_COLORS = [
   "oklch(72% 0.17 36)"
 ];
 
-const SPIN_DURATION_MS = 5800;
 const WHEEL_CENTER = 300;
 const WHEEL_OUTER_RADIUS = 282;
 const WHEEL_INNER_RADIUS = 102;
@@ -151,7 +150,7 @@ function isUpsideDownAngle(angle: number): boolean {
   return normalized > 90 && normalized < 270;
 }
 
-function buildWheelSegments(wheelSlots: GiveawayWheelSlot[], participantColors: Map<string, string>, wheelRotation: number): WheelSegment[] {
+function buildWheelSegments(wheelSlots: GiveawayWheelSlot[], participantColors: Map<string, string>, settledWheelRotation: number): WheelSegment[] {
   if (wheelSlots.length === 0) {
     return [];
   }
@@ -167,7 +166,7 @@ function buildWheelSegments(wheelSlots: GiveawayWheelSlot[], participantColors: 
     const endAngle = startAngle + segmentAngle;
     const centerAngle = startAngle + segmentAngle / 2;
     const textPosition = polarToCartesian(textRadius, centerAngle);
-    const screenCenterAngle = centerAngle + wheelRotation;
+    const screenCenterAngle = centerAngle + settledWheelRotation;
     const shouldFlipLabel = isUpsideDownAngle(screenCenterAngle);
 
     return {
@@ -318,8 +317,9 @@ export function RafflePage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [wheelRotation, setWheelRotation] = useState(0);
+  const [settledWheelRotation, setSettledWheelRotation] = useState(0);
   const spinIndexRef = useRef(0);
-  const winnerTimerRef = useRef<number | null>(null);
+  const pendingWinnerRef = useRef<GiveawayParticipant | null>(null);
 
   const participants = useMemo(() => buildGiveawayParticipants(rating.guests), [rating.guests]);
   const wheelSlots = useMemo(() => buildGiveawayWheelSlots(participants), [participants]);
@@ -328,7 +328,7 @@ export function RafflePage() {
     () => new Map(participantLegend.map((participant) => [participant.slug, participant.color])),
     [participantLegend]
   );
-  const wheelSegments = useMemo(() => buildWheelSegments(wheelSlots, participantColors, wheelRotation), [participantColors, wheelRotation, wheelSlots]);
+  const wheelSegments = useMemo(() => buildWheelSegments(wheelSlots, participantColors, settledWheelRotation), [participantColors, settledWheelRotation, wheelSlots]);
   const filteredParticipants = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
     if (!normalizedSearch) {
@@ -360,14 +360,6 @@ export function RafflePage() {
     void loadRating();
   }, [loadRating]);
 
-  useEffect(() => {
-    return () => {
-      if (winnerTimerRef.current !== null) {
-        window.clearTimeout(winnerTimerRef.current);
-      }
-    };
-  }, []);
-
   const startRaffle = useCallback(() => {
     const nextWinner = pickGiveawayWinner(participants);
     if (!nextWinner) {
@@ -382,11 +374,8 @@ export function RafflePage() {
       return;
     }
 
-    if (winnerTimerRef.current !== null) {
-      window.clearTimeout(winnerTimerRef.current);
-    }
-
     spinIndexRef.current += 1;
+    pendingWinnerRef.current = nextWinner;
     setWinner(null);
     setIsSpinning(true);
     setWheelRotation(getWinnerRotation({
@@ -394,11 +383,18 @@ export function RafflePage() {
       spinIndex: spinIndexRef.current,
       winnerIndex
     }));
-    winnerTimerRef.current = window.setTimeout(() => {
-      setWinner(nextWinner);
-      setIsSpinning(false);
-    }, SPIN_DURATION_MS);
   }, [participants, wheelSlots]);
+
+  const handleWheelTransitionEnd = useCallback((event: TransitionEvent<HTMLDivElement>) => {
+    if (event.currentTarget !== event.target || event.propertyName !== "transform" || !isSpinning) {
+      return;
+    }
+
+    setSettledWheelRotation(wheelRotation);
+    setWinner(pendingWinnerRef.current);
+    pendingWinnerRef.current = null;
+    setIsSpinning(false);
+  }, [isSpinning, wheelRotation]);
 
   const closeWinner = useCallback(() => {
     setWinner(null);
@@ -434,9 +430,9 @@ export function RafflePage() {
         <div className="giveaway-wheel-column" aria-live="polite">
           <img className="giveaway-pointer" src={wheelPointerIcon} alt="" />
           <div className={`giveaway-wheel-shell${isSpinning ? " is-spinning" : ""}`}>
-            <svg className="giveaway-wheel-svg" viewBox="0 0 600 600" role="img" aria-label={`Колесо розыгрыша: ${participants.length} участников`}>
-              <circle className="giveaway-wheel-backdrop" cx="300" cy="300" r="294" />
-              <g className="giveaway-wheel-spin" style={wheelStyle}>
+            <div className="giveaway-wheel-rotor" style={wheelStyle} onTransitionEnd={handleWheelTransitionEnd}>
+              <svg className="giveaway-wheel-svg" viewBox="0 0 600 600" role="img" aria-label={`Колесо розыгрыша: ${participants.length} участников`}>
+                <circle className="giveaway-wheel-backdrop" cx="300" cy="300" r="294" />
                 {wheelSegments.length > 0 ? (
                   wheelSegments.map((segment, index) => (
                     <g key={wheelSlots[index]?.slotId ?? `${index}-segment`}>
@@ -485,7 +481,9 @@ export function RafflePage() {
                 ) : (
                   <circle cx="300" cy="300" r="282" fill="oklch(94% 0.014 58)" />
                 )}
-              </g>
+              </svg>
+            </div>
+            <svg className="giveaway-wheel-overlay" viewBox="0 0 600 600" aria-hidden="true">
               <g className="giveaway-wheel-lights">
                 {Array.from({ length: 32 }).map((_, index) => {
                   const angle = (index / 32) * 360;

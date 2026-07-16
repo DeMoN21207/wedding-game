@@ -240,28 +240,36 @@
 }
 
 .giveaway-wheel-svg {
-  position: relative;
-  z-index: 1;
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.giveaway-wheel-spin {
+.giveaway-wheel-rotor {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
   backface-visibility: hidden;
   transform: translateZ(0) rotate(var(--giveaway-wheel-rotation));
-  transform-box: fill-box;
   transform-origin: center;
   transition: transform 5800ms cubic-bezier(0.08, 0.78, 0.13, 1);
+  will-change: transform;
+}
+
+.giveaway-wheel-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .giveaway-wheel-shell.is-spinning .giveaway-wheel-label {
   text-rendering: optimizeSpeed;
   stroke-width: 0.35px;
-}
-
-.giveaway-wheel-shell.is-spinning .giveaway-wheel-spin {
-  will-change: transform;
 }
 
 .giveaway-wheel-backdrop {
