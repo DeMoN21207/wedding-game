@@ -1,6 +1,6 @@
-import { Download, HardDrive, Image, Images, QrCode, Users, Video } from "lucide-react";
+import { AlertTriangle, Download, HardDrive, Image, Images, QrCode, Users, Video } from "lucide-react";
 import { memo } from "react";
-import { appPath, type AdminQr, type AlbumDashboard, type AlbumPhoto } from "../../api/client";
+import { appPath, type AdminQr, type AdminStorage, type AlbumDashboard, type AlbumPhoto } from "../../api/client";
 import { GuestAvatar } from "../../components/GuestAvatar";
 import { VideoPoster } from "../../components/VideoPoster";
 import { formatBytes } from "../../utils/format";
@@ -11,6 +11,7 @@ type AdminQrDashboardProps = {
   album: AlbumDashboard;
   cameraQr: AdminQr | null;
   qr: AdminQr;
+  storage: AdminStorage | null;
   recentPhotos: AlbumPhoto[];
   topGuests: TopGuest[];
   archiveUrl: string;
@@ -20,7 +21,7 @@ type AdminQrDashboardProps = {
 /**
  * Главный экран админки: QR, общая статистика и быстрый обзор загрузок.
  */
-export const AdminQrDashboard = memo(function AdminQrDashboard({ album, cameraQr, qr, recentPhotos, topGuests, archiveUrl, onOpenRecentPhoto }: AdminQrDashboardProps) {
+export const AdminQrDashboard = memo(function AdminQrDashboard({ album, cameraQr, qr, storage, recentPhotos, topGuests, archiveUrl, onOpenRecentPhoto }: AdminQrDashboardProps) {
   return (
     <>
       <section className="admin-wedding-hero">
@@ -87,6 +88,27 @@ export const AdminQrDashboard = memo(function AdminQrDashboard({ album, cameraQr
             </div>
           </div>
         </div>
+
+        {storage && (
+          <div className={`admin-storage-status${storage.is_low_space ? " is-warning" : ""}`}>
+            <div className="admin-storage-icon">
+              {storage.is_low_space ? <AlertTriangle size={24} /> : <HardDrive size={24} />}
+            </div>
+            <div>
+              <span>Свободно на диске</span>
+              <strong>{formatBytes(storage.free_bytes)}</strong>
+            </div>
+            <div>
+              <span>Лимит одного файла</span>
+              <strong>{formatBytes(storage.max_upload_bytes)}</strong>
+            </div>
+            <div>
+              <span>Примерно хватит</span>
+              <strong>{storage.estimated_max_video_uploads} видео</strong>
+            </div>
+            {storage.warning && <p>{storage.warning}</p>}
+          </div>
+        )}
 
         <div className="dashboard-section">
           <h3>10 последних моментов</h3>

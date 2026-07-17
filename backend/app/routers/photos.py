@@ -7,14 +7,14 @@ from pathlib import Path
 from threading import BoundedSemaphore
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from ..config import Settings
-from ..db import get_db
+from ..db import get_db, session_scope
 from ..deps import get_app_settings, get_current_guest, is_admin_request
 from ..errors import api_error
 from ..images import (
@@ -85,10 +85,48 @@ def upload_limit_mb(settings: Settings) -> int:
     return max(1, math.ceil(settings.max_upload_bytes / 1024 / 1024))
 
 
+def build_media_preview(settings: Settings, photo_id: int) -> None:
+    """Создает preview, thumbnail и poster после ответа гостю, не блокируя загрузку."""
+
+    with session_scope() as db:
+        photo = (
+            db.query(Photo)
+            .options(joinedload(Photo.guest))
+            .filter(Photo.id == photo_id, Photo.status == "active")
+            .one_or_none()
+        )
+        if photo is None or photo.preview_path:
+            return
+
+        original = absolute_from_data(settings, photo.original_path)
+        if not original.exists():
+            logger.warning("preview_original_missing photo_id=%s original=%s", photo.id, original)
+            return
+
+        final_preview = preview_path(settings, photo.guest, photo.number)
+        final_thumbnail = thumbnail_path(settings, photo.guest, photo.number)
+        try:
+            with preview_semaphore:
+                if photo.mime.startswith("video/"):
+                    if not save_video_preview(original, final_preview):
+                        logger.warning("video_preview_empty photo_id=%s original=%s", photo.id, original)
+                        return
+                else:
+                    save_preview(original, final_preview)
+                save_thumbnail(final_preview, final_thumbnail)
+            photo.preview_path = relative_to_data(settings, final_preview)
+            logger.info("preview_ready photo_id=%s thumbnail=%s", photo.id, final_thumbnail)
+        except Exception:
+            final_preview.unlink(missing_ok=True)
+            final_thumbnail.unlink(missing_ok=True)
+            logger.exception("preview_failed photo_id=%s", photo.id)
+
+
 @router.post("/photos", response_model=PhotoOut)
 def upload_photo(
     file: UploadFile,
     response: Response,
+    background_tasks: BackgroundTasks,
     guest: Guest = Depends(get_current_guest),
     settings: Settings = Depends(get_app_settings),
     db: Session = Depends(get_db),
@@ -177,35 +215,13 @@ def upload_photo(
     number = reserve_photo_number(db, guest.id)
     ensure_guest_dirs(settings, guest)
     final_original = original_path(settings, guest, number, extension)
-    final_preview = preview_path(settings, guest, number)
-    final_thumbnail = thumbnail_path(settings, guest, number)
     shutil.move(str(tmp_path), str(final_original))
-
-    preview_relative = None
-    if media_type == "image":
-        try:
-            with preview_semaphore:
-                save_preview(final_original, final_preview)
-                save_thumbnail(final_preview, final_thumbnail)
-            preview_relative = relative_to_data(settings, final_preview)
-        except Exception:
-            logger.exception("preview_failed guest_id=%s guest_slug=%s number=%s", guest.id, guest.slug, number)
-            preview_relative = None
-    else:
-        try:
-            with preview_semaphore:
-                if save_video_preview(final_original, final_preview):
-                    save_thumbnail(final_preview, final_thumbnail)
-                    preview_relative = relative_to_data(settings, final_preview)
-        except Exception:
-            logger.exception("video_preview_failed guest_id=%s guest_slug=%s number=%s", guest.id, guest.slug, number)
-            preview_relative = None
 
     photo = Photo(
         guest_id=guest.id,
         number=number,
         original_path=relative_to_data(settings, final_original),
-        preview_path=preview_relative,
+        preview_path=None,
         original_name=file.filename,
         mime=mime,
         size_bytes=size_bytes,
@@ -218,8 +234,6 @@ def upload_photo(
     except IntegrityError:
         db.rollback()
         remove_file(final_original)
-        remove_file(final_preview if preview_relative else None)
-        remove_file(final_thumbnail if preview_relative else None)
         active_duplicate = (
             db.query(Photo)
             .filter(Photo.guest_id == guest.id, Photo.sha256 == sha256, Photo.status == "active")
@@ -241,11 +255,10 @@ def upload_photo(
     except Exception:
         db.rollback()
         remove_file(final_original)
-        remove_file(final_preview if preview_relative else None)
-        remove_file(final_thumbnail if preview_relative else None)
         logger.exception("upload_commit_failed guest_id=%s guest_slug=%s number=%s", guest.id, guest.slug, number)
         raise
     db.refresh(photo)
+    background_tasks.add_task(build_media_preview, settings, photo.id)
     logger.info(
         "upload_saved guest_id=%s guest_slug=%s photo_id=%s number=%s size_bytes=%s mime=%s preview=%s duration_ms=%s",
         guest.id,

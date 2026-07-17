@@ -47,6 +47,7 @@ const EMPTY_ALBUM: AlbumDashboard = {
 
 export function AlbumPage({ cameraMode = false }: Props) {
   const uploadRef = useRef<HTMLDivElement | null>(null);
+  const previewRefreshTimer = useRef<number | null>(null);
   const [album, setAlbum] = useState<AlbumDashboard>(EMPTY_ALBUM);
   const [me, setMe] = useState<Me | null>(null);
   const [myPhotos, setMyPhotos] = useState<Photo[]>([]);
@@ -89,8 +90,10 @@ export function AlbumPage({ cameraMode = false }: Props) {
     }
   }, []);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const refresh = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     try {
       await loadAlbum();
       await loadGuest();
@@ -98,7 +101,9 @@ export function AlbumPage({ cameraMode = false }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось открыть альбом.");
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, [loadAlbum, loadGuest]);
 
@@ -111,6 +116,12 @@ export function AlbumPage({ cameraMode = false }: Props) {
       window.setTimeout(() => uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
     }
   }, [cameraMode, me]);
+
+  useEffect(() => () => {
+    if (previewRefreshTimer.current) {
+      window.clearTimeout(previewRefreshTimer.current);
+    }
+  }, []);
 
   const showIntro = useCallback(() => {
     setNeedsIntro(true);
@@ -187,6 +198,13 @@ export function AlbumPage({ cameraMode = false }: Props) {
 
   const handleUploaded = useCallback(() => {
     void refresh();
+    if (previewRefreshTimer.current) {
+      window.clearTimeout(previewRefreshTimer.current);
+    }
+    previewRefreshTimer.current = window.setTimeout(() => {
+      previewRefreshTimer.current = null;
+      void refresh(false);
+    }, 1800);
   }, [refresh]);
 
   const closeLightbox = useCallback(() => {

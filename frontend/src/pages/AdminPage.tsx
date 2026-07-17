@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdminGuest,
   AdminPhoto,
   AdminQr,
+  AdminStorage,
   AlbumPhoto,
   AlbumDashboard,
   deleteAdminPhoto,
@@ -11,6 +12,7 @@ import {
   getAdminCameraQr,
   getAdminGuests,
   getAdminPhotos,
+  getAdminStorage,
   getAlbum,
   logoutAdmin,
   permanentlyDeleteAdminPhoto,
@@ -46,23 +48,37 @@ export function AdminPage() {
   const [photos, setPhotos] = useState<AdminPhoto[]>([]);
   const [qr, setQr] = useState<AdminQr | null>(null);
   const [cameraQr, setCameraQr] = useState<AdminQr | null>(null);
+  const [storage, setStorage] = useState<AdminStorage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lightboxPhoto, setLightboxPhoto] = useState<LightboxPhoto | null>(null);
+  const qrCache = useRef<{ qr: AdminQr; cameraQr: AdminQr } | null>(null);
 
   const topGuests = useMemo(() => album.top_guests.filter((guest) => guest.active_photo_count > 0).slice(0, 5), [album.top_guests]);
   const recentPhotos = useMemo(() => album.recent_photos.slice(0, 10), [album.recent_photos]);
 
+  const loadQrCodes = useCallback(async () => {
+    if (qrCache.current) {
+      return qrCache.current;
+    }
+    const [nextQr, nextCameraQr] = await Promise.all([getAdminAlbumQr(), getAdminCameraQr()]);
+    qrCache.current = { qr: nextQr, cameraQr: nextCameraQr };
+    setQr(nextQr);
+    setCameraQr(nextCameraQr);
+    return qrCache.current;
+  }, []);
+
   const loadSection = useCallback(async () => {
     try {
       if (tab === "qr") {
-        const [nextAlbum, nextQr, nextCameraQr] = await Promise.all([
+        const [nextAlbum, nextStorage, nextQrCodes] = await Promise.all([
           getAlbum(),
-          getAdminAlbumQr(),
-          getAdminCameraQr()
+          getAdminStorage(),
+          loadQrCodes()
         ]);
         setAlbum(nextAlbum);
-        setQr(nextQr);
-        setCameraQr(nextCameraQr);
+        setStorage(nextStorage);
+        setQr(nextQrCodes.qr);
+        setCameraQr(nextQrCodes.cameraQr);
       }
       if (tab === "guests") {
         const [nextAlbum, nextGuests] = await Promise.all([getAlbum(), getAdminGuests()]);
@@ -83,7 +99,7 @@ export function AdminPage() {
       }
       setError(err instanceof Error ? err.message : "Ошибка админки.");
     }
-  }, [tab]);
+  }, [loadQrCodes, tab]);
 
   useEffect(() => {
     void loadSection();
@@ -162,6 +178,7 @@ export function AdminPage() {
           album={album}
           cameraQr={cameraQr}
           qr={qr}
+          storage={storage}
           recentPhotos={recentPhotos}
           topGuests={topGuests}
           archiveUrl={getAdminArchiveUrl("active")}

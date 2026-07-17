@@ -167,6 +167,56 @@ def test_admin_archive_refuses_when_disk_space_is_too_low(client, monkeypatch):
     assert response.json()["detail"]["code"] == "ARCHIVE_NOT_ENOUGH_SPACE"
 
 
+def test_admin_storage_status_reports_free_space_and_video_capacity(client, monkeypatch):
+    from conftest import login_admin
+
+    from app.routers import admin as admin_router
+
+    gib = 1024 * 1024 * 1024
+    video_limit = 300 * 1024 * 1024
+    monkeypatch.setattr(
+        admin_router.shutil,
+        "disk_usage",
+        lambda _: SimpleNamespace(total=30 * gib, used=8 * gib, free=22 * gib),
+    )
+
+    login_admin(client)
+    response = client.get("/api/admin/storage")
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["total_bytes"] == 30 * gib
+    assert data["used_bytes"] == 8 * gib
+    assert data["free_bytes"] == 22 * gib
+    assert data["reserve_bytes"] == 5 * gib
+    assert data["max_upload_bytes"] == video_limit
+    assert data["estimated_max_video_uploads"] == (17 * gib) // video_limit
+    assert data["is_low_space"] is False
+    assert data["warning"] is None
+
+
+def test_admin_storage_status_warns_when_free_space_is_low(client, monkeypatch):
+    from conftest import login_admin
+
+    from app.routers import admin as admin_router
+
+    gib = 1024 * 1024 * 1024
+    monkeypatch.setattr(
+        admin_router.shutil,
+        "disk_usage",
+        lambda _: SimpleNamespace(total=30 * gib, used=26 * gib, free=4 * gib),
+    )
+
+    login_admin(client)
+    response = client.get("/api/admin/storage")
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["is_low_space"] is True
+    assert data["estimated_max_video_uploads"] == 0
+    assert "меньше 5 ГБ" in data["warning"]
+
+
 def test_admin_can_permanently_delete_trashed_photo_files(client):
     from conftest import login_admin
 

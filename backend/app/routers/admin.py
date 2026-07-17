@@ -22,7 +22,7 @@ from ..deps import get_app_settings, require_admin
 from ..errors import api_error
 from ..media_urls import photo_media_type, photo_preview_url, photo_thumbnail_url
 from ..models import Event, Guest, Photo
-from ..schemas import AdminGuestOut, AdminLogin, AdminPhotoOut, EventCreate, EventOut, EventQrOut
+from ..schemas import AdminGuestOut, AdminLogin, AdminPhotoOut, AdminStorageOut, EventCreate, EventOut, EventQrOut
 from ..security import ADMIN_COOKIE, admin_password_matches, generate_token, make_admin_cookie
 from ..slug import unique_slug
 from ..storage import absolute_from_data, delete_photo_files, move_photo_to_trash, restore_photo_from_trash
@@ -57,6 +57,26 @@ def ensure_archive_disk_space(settings: Settings, photos: list[Photo]) -> None:
             "Недостаточно места для сборки архива: нужно примерно "
             f"{human_size(required_free)}, доступно {human_size(free_bytes)}."
         ),
+    )
+
+
+def storage_status(settings: Settings) -> AdminStorageOut:
+    """Возвращает свободное место и грубую емкость по максимальным видео."""
+
+    usage = shutil.disk_usage(settings.data_dir)
+    available_for_uploads = max(0, usage.free - ARCHIVE_FREE_SPACE_RESERVE_BYTES)
+    is_low_space = usage.free < ARCHIVE_FREE_SPACE_RESERVE_BYTES
+    return AdminStorageOut(
+        total_bytes=usage.total,
+        used_bytes=usage.used,
+        free_bytes=usage.free,
+        reserve_bytes=ARCHIVE_FREE_SPACE_RESERVE_BYTES,
+        max_upload_bytes=settings.max_upload_bytes,
+        estimated_max_video_uploads=available_for_uploads // max(1, settings.max_upload_bytes),
+        is_low_space=is_low_space,
+        warning="Свободно меньше 5 ГБ. Лучше почистить корзину или забрать архив перед новым видео."
+        if is_low_space
+        else None,
     )
 
 
@@ -263,6 +283,13 @@ def album_camera_qr(settings: Settings = Depends(get_app_settings)) -> EventQrOu
 
     url = camera_url(settings)
     return EventQrOut(url=url, qr_png_base64=qr_data_url(url, str(settings.data_dir / "qr-cache")))
+
+
+@router.get("/storage", response_model=AdminStorageOut, dependencies=[Depends(require_admin)])
+def admin_storage(settings: Settings = Depends(get_app_settings)) -> AdminStorageOut:
+    """Возвращает статус диска для предупреждения о переполнении на празднике."""
+
+    return storage_status(settings)
 
 
 @router.get("/guests", response_model=list[AdminGuestOut], dependencies=[Depends(require_admin)])

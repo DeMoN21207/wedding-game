@@ -108,6 +108,17 @@ export type AdminQr = {
   qr_png_base64: string;
 };
 
+export type AdminStorage = {
+  total_bytes: number;
+  used_bytes: number;
+  free_bytes: number;
+  reserve_bytes: number;
+  max_upload_bytes: number;
+  estimated_max_video_uploads: number;
+  is_low_space: boolean;
+  warning: string | null;
+};
+
 export type AdminArchiveStatus = "active" | "trashed" | "all";
 
 export class RequestError extends Error {
@@ -248,6 +259,10 @@ export function getAdminAlbumQr(): Promise<AdminQr> {
 
 export function getAdminCameraQr(): Promise<AdminQr> {
   return api<AdminQr>("/api/admin/album/camera-qr");
+}
+
+export function getAdminStorage(): Promise<AdminStorage> {
+  return api<AdminStorage>("/api/admin/storage");
 }
 
 export function permanentlyDeleteAdminPhoto(id: number): Promise<void> {

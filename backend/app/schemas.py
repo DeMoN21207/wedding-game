@@ -43,6 +43,19 @@ class EventQrOut(ApiModel):
     qr_png_base64: str
 
 
+class AdminStorageOut(ApiModel):
+    """Статус диска для админки и контроля больших видео."""
+
+    total_bytes: int
+    used_bytes: int
+    free_bytes: int
+    reserve_bytes: int
+    max_upload_bytes: int
+    estimated_max_video_uploads: int
+    is_low_space: bool
+    warning: Optional[str] = None
+
+
 class EventPublicOut(ApiModel):
     """Публичные данные события по токену QR."""
 

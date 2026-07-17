@@ -1,6 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
-from threading import Barrier
 
 from conftest import auth_headers, create_event, create_guest
 from PIL import Image
@@ -38,7 +37,7 @@ def upload_photo(
     )
 
 
-def test_upload_creates_preview_and_personal_gallery_item(client):
+def test_upload_returns_before_image_preview_is_ready_and_background_builds_it(client):
     event = create_event(client, "Свадьба")
     guest = create_guest(client, event["token"], "Аня")
 
@@ -48,8 +47,12 @@ def test_upload_creates_preview_and_personal_gallery_item(client):
     photo = response.json()
     assert photo["number"] == 1
     assert photo["media_type"] == "image"
-    assert photo["preview_url"] == "/media/previews/1"
-    assert photo["thumbnail_url"] == "/media/thumbs/1"
+    assert photo["preview_url"] is None
+    assert photo["thumbnail_url"] is None
+
+    thumbnail = client.get(f"/media/thumbs/{photo['id']}")
+    assert thumbnail.status_code == 200
+    assert thumbnail.headers["content-type"].startswith("image/webp")
 
     gallery = client.get("/api/me/photos", headers=auth_headers(guest["guest_token"]))
     assert gallery.status_code == 200
@@ -82,7 +85,7 @@ def test_upload_accepts_iphone_mov_video_and_serves_it(client, monkeypatch):
     photo = response.json()
     assert photo["media_type"] == "video"
     assert photo["preview_url"] == "/media/previews/1"
-    assert photo["thumbnail_url"] == "/media/thumbs/1"
+    assert photo["thumbnail_url"] is None
 
     gallery = client.get("/api/me/photos", headers=auth_headers(guest["guest_token"]))
     assert gallery.status_code == 200
@@ -177,19 +180,9 @@ def test_deleted_duplicate_upload_creates_new_number(client):
     assert [item["number"] for item in gallery.json()] == [2]
 
 
-def test_parallel_uploads_for_same_guest_get_unique_numbers(client, monkeypatch):
-    from app.routers import photos as photo_router
-
+def test_parallel_uploads_for_same_guest_get_unique_numbers(client):
     event = create_event(client, "Свадьба")
     guest = create_guest(client, event["token"], "Соня")
-    original_save_preview = photo_router.save_preview
-    preview_barrier = Barrier(2)
-
-    def save_preview_after_both_requests_read_number(original, preview):
-        preview_barrier.wait(timeout=5)
-        return original_save_preview(original, preview)
-
-    monkeypatch.setattr(photo_router, "save_preview", save_preview_after_both_requests_read_number)
 
     def send(index: int):
         return upload_photo(

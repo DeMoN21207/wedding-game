@@ -10,6 +10,7 @@ import {
   getAdminCameraQr,
   getAdminGuests,
   getAdminPhotos,
+  getAdminStorage,
   getAlbum,
   getGalleryPhotos,
   getMe,
@@ -187,6 +188,7 @@ describe("api client", () => {
     await expectJsonRequest(() => getAdminPhotos("trashed", 7), "/api/admin/photos?status=trashed&event_id=7");
     await expectJsonRequest(() => getAdminAlbumQr(), "/api/admin/album/qr");
     await expectJsonRequest(() => getAdminCameraQr(), "/api/admin/album/camera-qr");
+    await expectJsonRequest(() => getAdminStorage(), "/api/admin/storage");
     await expectJsonRequest(() => restoreAdminPhoto(42), "/api/admin/photos/42/restore", { method: "POST" });
   });
 

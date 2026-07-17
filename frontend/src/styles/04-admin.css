@@ -444,6 +444,52 @@ code {
   grid-column: auto;
 }
 
+.admin-storage-status {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: oklch(99% 0.006 58 / 0.78);
+  border: 1px solid oklch(89% 0.018 42);
+  border-radius: 8px;
+}
+
+.admin-storage-status.is-warning {
+  background: oklch(98% 0.035 45 / 0.86);
+  border-color: oklch(73% 0.13 34);
+}
+
+.admin-storage-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  color: var(--rose);
+  background: oklch(96% 0.026 35);
+  border: 1px solid oklch(88% 0.04 35);
+  border-radius: 999px;
+}
+
+.admin-storage-status span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+}
+
+.admin-storage-status strong {
+  color: var(--ink);
+  font-size: 1.18rem;
+  line-height: 1.1;
+}
+
+.admin-storage-status p {
+  grid-column: 2 / -1;
+  margin: -4px 0 0;
+  color: var(--rose);
+  font-weight: 800;
+}
+
 .admin-download-all {
   min-width: 178px;
   min-height: 42px;

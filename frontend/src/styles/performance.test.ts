@@ -9,6 +9,8 @@ const photoCardSource = readFileSync(new URL("../components/PhotoCard.tsx", impo
 const videoPosterSource = readFileSync(new URL("../components/VideoPoster.tsx", import.meta.url), "utf8");
 const dashboardRecentSource = readFileSync(new URL("../features/album/DashboardRecent.tsx", import.meta.url), "utf8");
 const galleryPageSource = readFileSync(new URL("../pages/GalleryPage.tsx", import.meta.url), "utf8");
+const adminPageSource = readFileSync(new URL("../pages/AdminPage.tsx", import.meta.url), "utf8");
+const albumPageSource = readFileSync(new URL("../pages/AlbumPage.tsx", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../main.tsx", import.meta.url), "utf8");
 
 describe("frontend performance safeguards", () => {
@@ -65,5 +67,18 @@ describe("frontend performance safeguards", () => {
     aspect-ratio: auto;
     display: block;
   }`);
+  });
+
+  it("кэширует QR в админке и не генерирует PNG на каждый обзор", () => {
+    expect(adminPageSource).toContain("const qrCache = useRef");
+    expect(adminPageSource).toContain("const loadQrCodes = useCallback");
+    expect(adminPageSource).toContain("if (qrCache.current)");
+    expect(adminPageSource).toContain("getAdminStorage()");
+  });
+
+  it("повторно обновляет альбом после фоновой подготовки превью", () => {
+    expect(albumPageSource).toContain("previewRefreshTimer");
+    expect(albumPageSource).toContain("window.setTimeout");
+    expect(albumPageSource).toContain("window.clearTimeout");
   });
 });

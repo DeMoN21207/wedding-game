@@ -309,6 +309,14 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-storage-status {
+    grid-template-columns: auto 1fr;
+  }
+
+  .admin-storage-status p {
+    grid-column: 1 / -1;
+  }
+
   .dashboard-stat.wide-stat {
     grid-column: auto;
   }
