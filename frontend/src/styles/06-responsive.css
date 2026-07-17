@@ -533,6 +533,20 @@
     object-fit: contain;
   }
 
+  .video-poster.gallery-card-video {
+    min-height: 0;
+    height: auto;
+    aspect-ratio: auto;
+    display: block;
+  }
+
+  .video-poster.gallery-card-video img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: auto;
+    object-fit: contain;
+  }
+
   .gallery-card-placeholder,
   .gallery-card-video {
     min-height: 150px;

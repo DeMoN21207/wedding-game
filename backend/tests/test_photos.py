@@ -57,7 +57,16 @@ def test_upload_creates_preview_and_personal_gallery_item(client):
     assert gallery.json()[0]["thumbnail_url"] == "/media/thumbs/1"
 
 
-def test_upload_accepts_iphone_mov_video_and_serves_it(client):
+def test_upload_accepts_iphone_mov_video_and_serves_it(client, monkeypatch):
+    from app.routers import photos as photo_router
+
+    def fake_video_preview(original, preview):
+        preview.parent.mkdir(parents=True, exist_ok=True)
+        image = Image.new("RGB", (1200, 720), color=(40, 80, 160))
+        image.save(preview, format="JPEG")
+        return True
+
+    monkeypatch.setattr(photo_router, "save_video_preview", fake_video_preview)
     event = create_event(client, "Свадьба")
     guest = create_guest(client, event["token"], "Видео")
 
@@ -73,11 +82,19 @@ def test_upload_accepts_iphone_mov_video_and_serves_it(client):
     photo = response.json()
     assert photo["media_type"] == "video"
     assert photo["preview_url"] == "/media/previews/1"
-    assert photo["thumbnail_url"] is None
+    assert photo["thumbnail_url"] == "/media/thumbs/1"
 
     gallery = client.get("/api/me/photos", headers=auth_headers(guest["guest_token"]))
     assert gallery.status_code == 200
     assert gallery.json()[0]["media_type"] == "video"
+    assert gallery.json()[0]["thumbnail_url"] == "/media/thumbs/1"
+
+    thumbnail = client.get(f"/media/thumbs/{photo['id']}")
+    assert thumbnail.status_code == 200
+    assert thumbnail.headers["content-type"].startswith("image/webp")
+    poster_thumbnail = Image.open(BytesIO(thumbnail.content))
+    assert poster_thumbnail.format == "WEBP"
+    assert max(poster_thumbnail.size) <= 640
 
     preview = client.get(f"/media/previews/{photo['id']}")
     assert preview.status_code == 200

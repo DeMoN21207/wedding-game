@@ -1,6 +1,7 @@
-import { Download, Eye, Play, RotateCcw, Trash2, Video, XCircle } from "lucide-react";
+import { Download, Eye, RotateCcw, Trash2, XCircle } from "lucide-react";
 import { memo } from "react";
 import { appPath, type AdminPhoto } from "../../api/client";
+import { VideoPoster } from "../../components/VideoPoster";
 import { formatBytes } from "../../utils/format";
 
 type AdminPhotoGridProps = {
@@ -23,10 +24,7 @@ export const AdminPhotoGrid = memo(function AdminPhotoGrid({ mode, photos, onOpe
           {photo.thumbnail_url || photo.preview_url ? (
             <button className="admin-photo-open-button" type="button" title="Открыть файл" onClick={() => onOpenPhoto(photo)}>
               {photo.media_type === "video" ? (
-                <div className="video-placeholder admin-photo-preview" aria-label={`Видео ${photo.number}`}>
-                  <Video size={28} />
-                  <Play size={19} fill="currentColor" />
-                </div>
+                <VideoPoster posterUrl={photo.thumbnail_url} label={`Видео ${photo.number}`} className="admin-photo-preview" />
               ) : (
                 <img
                   className="admin-photo-preview"

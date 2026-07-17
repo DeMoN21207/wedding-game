@@ -25,6 +25,7 @@ from ..images import (
     optimize_original_image,
     save_preview,
     save_thumbnail,
+    save_video_preview,
     stream_upload,
     tmp_upload_path,
 )
@@ -189,6 +190,15 @@ def upload_photo(
             preview_relative = relative_to_data(settings, final_preview)
         except Exception:
             logger.exception("preview_failed guest_id=%s guest_slug=%s number=%s", guest.id, guest.slug, number)
+            preview_relative = None
+    else:
+        try:
+            with preview_semaphore:
+                if save_video_preview(final_original, final_preview):
+                    save_thumbnail(final_preview, final_thumbnail)
+                    preview_relative = relative_to_data(settings, final_preview)
+        except Exception:
+            logger.exception("video_preview_failed guest_id=%s guest_slug=%s number=%s", guest.id, guest.slug, number)
             preview_relative = None
 
     photo = Photo(

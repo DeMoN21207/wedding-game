@@ -1,8 +1,9 @@
-import { ArrowLeft, Camera, Download, Images, Play, RefreshCw, Video } from "lucide-react";
+import { ArrowLeft, Camera, Download, Images, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { appPath, GalleryPhoto, getGalleryPhotos } from "../api/client";
 import { LightboxPhoto, PhotoLightbox } from "../components/PhotoLightbox";
+import { VideoPoster } from "../components/VideoPoster";
 import { formatShortDate } from "../utils/format";
 
 const PAGE_SIZE = 48;
@@ -22,10 +23,13 @@ const GalleryCard = memo(function GalleryCard({ photo, onOpenPhoto, priority = f
       {thumbUrl || isVideo ? (
         <button className="gallery-card-thumb" type="button" title="Открыть файл" onClick={() => onOpenPhoto(photo)}>
           {isVideo ? (
-            <div className="video-placeholder gallery-card-video" aria-label={`${photo.guest_nickname}, видео ${photo.number}`}>
-              <Video size={30} />
-              <Play size={20} fill="currentColor" />
-            </div>
+            <VideoPoster
+              posterUrl={photo.thumbnail_url}
+              label={`${photo.guest_nickname}, видео ${photo.number}`}
+              className="gallery-card-video"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
+            />
           ) : (
             <img
               src={appPath(thumbUrl ?? "")}

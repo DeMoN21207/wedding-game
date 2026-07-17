@@ -1,6 +1,7 @@
-import { Play, Trash2, Video } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { memo } from "react";
 import { appPath, type Photo } from "../api/client";
+import { VideoPoster } from "./VideoPoster";
 
 type Props = {
   photo: Photo;
@@ -17,10 +18,7 @@ export const PhotoCard = memo(function PhotoCard({ photo, onDelete, onOpen }: Pr
     <article className="photo-card">
       <button className="photo-thumb-button" type="button" title={canOpen ? "Открыть файл" : undefined} onClick={() => onOpen?.(photo)} disabled={!canOpen}>
         {isVideo ? (
-          <div className="video-placeholder photo-thumb" aria-label={`Видео ${photo.number}`}>
-            <Video size={26} />
-            <Play size={18} fill="currentColor" />
-          </div>
+          <VideoPoster posterUrl={photo.thumbnail_url} label={`Видео ${photo.number}`} className="photo-thumb" />
         ) : (
           thumbUrl ? (
             <img

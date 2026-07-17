@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
+import subprocess
 import uuid
 from pathlib import Path
 from typing import Literal, Optional, Tuple
@@ -233,3 +235,45 @@ def save_thumbnail(source: Path, thumbnail: Path) -> None:
         image = image_as_rgb(image)
         image.thumbnail((640, 640))
         image.save(thumbnail, format="WEBP", quality=76, method=4)
+
+
+def save_video_preview(original: Path, preview: Path) -> bool:
+    """Достает JPEG-poster из видео через ffmpeg, чтобы видео в галерее имело нормальную превьюшку."""
+
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        return False
+
+    preview.parent.mkdir(parents=True, exist_ok=True)
+    temporary_preview = preview.with_name(f"{preview.name}.tmp.jpg")
+    temporary_preview.unlink(missing_ok=True)
+    command = [
+        ffmpeg,
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-ss",
+        "0.4",
+        "-i",
+        str(original),
+        "-frames:v",
+        "1",
+        "-vf",
+        "scale=1280:-2:force_original_aspect_ratio=decrease",
+        "-q:v",
+        "4",
+        str(temporary_preview),
+    ]
+    try:
+        result = subprocess.run(command, capture_output=True, timeout=20, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        temporary_preview.unlink(missing_ok=True)
+        return False
+
+    if result.returncode != 0 or not temporary_preview.exists() or temporary_preview.stat().st_size == 0:
+        temporary_preview.unlink(missing_ok=True)
+        return False
+
+    temporary_preview.replace(preview)
+    return True

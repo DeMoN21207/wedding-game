@@ -1,10 +1,11 @@
-import { ChevronLeft, ChevronRight, Play, Sparkles, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { memo, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { A11y, Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { appPath, type AlbumPhoto } from "../../api/client";
+import { VideoPoster } from "../../components/VideoPoster";
 
 type SliderHandle = {
   slidePrev: (speed?: number, runCallbacks?: boolean) => void;
@@ -93,10 +94,13 @@ export const DashboardRecent = memo(function DashboardRecent({ photos, loading, 
                 {photo.thumbnail_url || photo.preview_url ? (
                   <button className="moments-photo-button" type="button" title="Открыть файл" onClick={() => onOpenPhoto(photo)}>
                     {photo.media_type === "video" ? (
-                      <div className="video-placeholder moments-video-placeholder" aria-label={`${photo.guest_nickname}, видео ${photo.number}`}>
-                        <Video size={34} />
-                        <Play size={22} fill="currentColor" />
-                      </div>
+                      <VideoPoster
+                        posterUrl={photo.thumbnail_url}
+                        label={`${photo.guest_nickname}, видео ${photo.number}`}
+                        className="moments-video-placeholder"
+                        loading={index < 4 ? "eager" : "lazy"}
+                        fetchPriority={index < 4 ? "high" : "auto"}
+                      />
                     ) : (
                       <img
                         src={appPath(photo.thumbnail_url ?? photo.preview_url ?? "")}

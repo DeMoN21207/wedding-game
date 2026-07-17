@@ -6,7 +6,9 @@ const foundationStyles = readFileSync(new URL("./01-foundation.css", import.meta
 const uploadGalleryStyles = readFileSync(new URL("./03-upload-gallery.css", import.meta.url), "utf8");
 const responsiveStyles = readFileSync(new URL("./06-responsive.css", import.meta.url), "utf8");
 const photoCardSource = readFileSync(new URL("../components/PhotoCard.tsx", import.meta.url), "utf8");
+const videoPosterSource = readFileSync(new URL("../components/VideoPoster.tsx", import.meta.url), "utf8");
 const dashboardRecentSource = readFileSync(new URL("../features/album/DashboardRecent.tsx", import.meta.url), "utf8");
+const galleryPageSource = readFileSync(new URL("../pages/GalleryPage.tsx", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../main.tsx", import.meta.url), "utf8");
 
 describe("frontend performance safeguards", () => {
@@ -42,10 +44,26 @@ describe("frontend performance safeguards", () => {
     expect(photoCardSource).not.toContain("height={640}");
     expect(dashboardRecentSource).not.toContain("height={640}");
     expect(uploadGalleryStyles).toContain(`.wedding-photo-grid .photo-thumb-button img.photo-thumb,
-.moments-photo-button img {
+.wedding-photo-grid .photo-thumb-button .video-poster.photo-thumb,
+.moments-photo-button img,
+.moments-photo-button .video-poster {
   height: auto;
   aspect-ratio: auto;
   object-fit: contain;
 }`);
+  });
+
+  it("показывает video poster вместо растянутой заглушки, когда thumbnail готов", () => {
+    expect(videoPosterSource).toContain("posterUrl");
+    expect(videoPosterSource).toContain("video-play-badge");
+    expect(photoCardSource).toContain("VideoPoster");
+    expect(dashboardRecentSource).toContain("VideoPoster");
+    expect(galleryPageSource).toContain("VideoPoster");
+    expect(responsiveStyles).toContain(`.video-poster.gallery-card-video {
+    min-height: 0;
+    height: auto;
+    aspect-ratio: auto;
+    display: block;
+  }`);
   });
 });

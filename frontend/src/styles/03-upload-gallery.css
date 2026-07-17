@@ -98,6 +98,17 @@
   transform: translateZ(0);
 }
 
+.video-poster.moments-video-placeholder {
+  aspect-ratio: auto;
+  display: block;
+}
+
+.moments-photo-button .video-poster img {
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
 .my-photos-section {
   scroll-margin-top: 24px;
 }
@@ -303,7 +314,9 @@
 }
 
 .wedding-photo-grid .photo-thumb-button img.photo-thumb,
-.moments-photo-button img {
+.wedding-photo-grid .photo-thumb-button .video-poster.photo-thumb,
+.moments-photo-button img,
+.moments-photo-button .video-poster {
   height: auto;
   aspect-ratio: auto;
   object-fit: contain;

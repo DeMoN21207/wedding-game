@@ -1,7 +1,8 @@
-import { Download, HardDrive, Image, Images, Play, QrCode, Users, Video } from "lucide-react";
+import { Download, HardDrive, Image, Images, QrCode, Users, Video } from "lucide-react";
 import { memo } from "react";
 import { appPath, type AdminQr, type AlbumDashboard, type AlbumPhoto } from "../../api/client";
 import { GuestAvatar } from "../../components/GuestAvatar";
+import { VideoPoster } from "../../components/VideoPoster";
 import { formatBytes } from "../../utils/format";
 
 type TopGuest = AlbumDashboard["top_guests"][number];
@@ -100,10 +101,7 @@ export const AdminQrDashboard = memo(function AdminQrDashboard({ album, cameraQr
                   onClick={() => onOpenRecentPhoto(photo)}
                 >
                   {photo.media_type === "video" ? (
-                    <div className="video-placeholder recent-thumb-video" aria-label={`Видео ${photo.number}`}>
-                      <Video size={24} />
-                      <Play size={16} fill="currentColor" />
-                    </div>
+                    <VideoPoster posterUrl={photo.thumbnail_url} label={`Видео ${photo.number}`} className="recent-thumb-video" />
                   ) : (
                     <img src={appPath(photo.thumbnail_url ?? photo.preview_url ?? "")} alt={`Фото ${photo.number}`} loading="lazy" decoding="async" />
                   )}
