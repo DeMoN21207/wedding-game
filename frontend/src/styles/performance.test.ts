@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 const foundationStyles = readFileSync(new URL("./01-foundation.css", import.meta.url), "utf8");
+const uploadGalleryStyles = readFileSync(new URL("./03-upload-gallery.css", import.meta.url), "utf8");
 const responsiveStyles = readFileSync(new URL("./06-responsive.css", import.meta.url), "utf8");
+const photoCardSource = readFileSync(new URL("../components/PhotoCard.tsx", import.meta.url), "utf8");
+const dashboardRecentSource = readFileSync(new URL("../features/album/DashboardRecent.tsx", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../main.tsx", import.meta.url), "utf8");
 
 describe("frontend performance safeguards", () => {
@@ -33,5 +36,16 @@ describe("frontend performance safeguards", () => {
   }`);
     expect(responsiveStyles).toContain(`.gallery-card-meta {
     position: static;`);
+  });
+
+  it("не задает квадратную высоту гостевым фото на главной", () => {
+    expect(photoCardSource).not.toContain("height={640}");
+    expect(dashboardRecentSource).not.toContain("height={640}");
+    expect(uploadGalleryStyles).toContain(`.wedding-photo-grid .photo-thumb-button img.photo-thumb,
+.moments-photo-button img {
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+}`);
   });
 });

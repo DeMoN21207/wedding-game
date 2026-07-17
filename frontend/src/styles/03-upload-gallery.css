@@ -302,6 +302,13 @@
   aspect-ratio: 1.08;
 }
 
+.wedding-photo-grid .photo-thumb-button img.photo-thumb,
+.moments-photo-button img {
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
 .wedding-photo-grid .photo-meta {
   min-height: 34px;
   padding: 5px 6px;

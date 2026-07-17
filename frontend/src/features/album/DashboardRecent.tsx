@@ -105,7 +105,6 @@ export const DashboardRecent = memo(function DashboardRecent({ photos, loading, 
                         decoding="async"
                         fetchPriority={index < 4 ? "high" : "auto"}
                         width={640}
-                        height={640}
                       />
                     )}
                   </button>
