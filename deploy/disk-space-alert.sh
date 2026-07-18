@@ -9,13 +9,8 @@ STATE_FILE="${DISK_ALERT_STATE_FILE:-/var/lib/wedding-events/disk-alert.state}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
 
-if [ -z "${TELEGRAM_BOT_TOKEN}" ] || [ -z "${TELEGRAM_CHAT_ID}" ]; then
-  echo "TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are required" >&2
-  exit 2
-fi
-
 if [ ! -e "${CHECK_PATH}" ]; then
-  echo "disk alert path does not exist: ${CHECK_PATH}" >&2
+  logger -t wedding-disk-alert "disk alert path does not exist: ${CHECK_PATH}"
   exit 3
 fi
 
@@ -33,6 +28,9 @@ fi
 
 send_telegram() {
   local text="$1"
+  if [ -z "${TELEGRAM_BOT_TOKEN}" ] || [ -z "${TELEGRAM_CHAT_ID}" ]; then
+    return 0
+  fi
   curl --fail --silent --show-error \
     --request POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     --data "chat_id=${TELEGRAM_CHAT_ID}" \
@@ -42,12 +40,16 @@ send_telegram() {
 if [ "${free_kb}" -lt "${threshold_kb}" ]; then
   echo "low" >"${STATE_FILE}"
   if [ "${previous_state}" != "low" ]; then
-    send_telegram "Wedding album disk alert: ${free_gb} GB free on ${mount_point} (${used_percent} used). Backup/check storage now."
+    message="Wedding album disk alert: ${free_gb} GB free on ${mount_point} (${used_percent} used). Check storage now."
+    logger -t wedding-disk-alert "${message}"
+    send_telegram "${message}"
   fi
   exit 1
 fi
 
 echo "ok" >"${STATE_FILE}"
 if [ "${previous_state}" = "low" ]; then
-  send_telegram "Wedding album disk recovered: ${free_gb} GB free on ${mount_point} (${used_percent} used)."
+  message="Wedding album disk recovered: ${free_gb} GB free on ${mount_point} (${used_percent} used)."
+  logger -t wedding-disk-alert "${message}"
+  send_telegram "${message}"
 fi

@@ -29,7 +29,6 @@ from ..storage import absolute_from_data, delete_photo_files, move_photo_to_tras
 
 router = APIRouter(prefix="/admin")
 
-ARCHIVE_FREE_SPACE_RESERVE_BYTES = 5 * 1024 * 1024 * 1024
 ARCHIVE_ZIP_OVERHEAD_BYTES = 64 * 1024 * 1024
 
 
@@ -45,7 +44,7 @@ def ensure_archive_disk_space(settings: Settings, photos: list[Photo]) -> None:
     """Проверяет, что ZIP-архив не заполнит диск во время сборки."""
 
     archive_bytes = sum(photo.size_bytes for photo in photos) + ARCHIVE_ZIP_OVERHEAD_BYTES
-    required_free = archive_bytes + ARCHIVE_FREE_SPACE_RESERVE_BYTES
+    required_free = archive_bytes + settings.disk_free_reserve_bytes
     free_bytes = shutil.disk_usage(settings.data_dir).free
     if free_bytes >= required_free:
         return
@@ -64,13 +63,13 @@ def storage_status(settings: Settings) -> AdminStorageOut:
     """Возвращает свободное место и грубую емкость по максимальным видео."""
 
     usage = shutil.disk_usage(settings.data_dir)
-    available_for_uploads = max(0, usage.free - ARCHIVE_FREE_SPACE_RESERVE_BYTES)
-    is_low_space = usage.free < ARCHIVE_FREE_SPACE_RESERVE_BYTES
+    available_for_uploads = max(0, usage.free - settings.disk_free_reserve_bytes)
+    is_low_space = usage.free < settings.disk_free_reserve_bytes
     return AdminStorageOut(
         total_bytes=usage.total,
         used_bytes=usage.used,
         free_bytes=usage.free,
-        reserve_bytes=ARCHIVE_FREE_SPACE_RESERVE_BYTES,
+        reserve_bytes=settings.disk_free_reserve_bytes,
         max_upload_bytes=settings.max_upload_bytes,
         estimated_max_video_uploads=available_for_uploads // max(1, settings.max_upload_bytes),
         is_low_space=is_low_space,

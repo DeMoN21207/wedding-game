@@ -96,9 +96,9 @@ describe("frontend performance safeguards", () => {
     expect(adminPageSource).not.toContain("useState(true)");
   });
 
-  it("повторно обновляет альбом после фоновой подготовки превью", () => {
-    expect(albumPageSource).toContain("previewRefreshTimer");
-    expect(albumPageSource).toContain("window.setTimeout");
-    expect(albumPageSource).toContain("window.clearTimeout");
+  it("обновляет данные альбома параллельно и без таймерного дубля запросов", () => {
+    expect(albumPageSource).toContain("await Promise.all([loadAlbum(), loadGuest()])");
+    expect(albumPageSource).toContain("Promise.all([loadAlbum(), loadMyPhotos()])");
+    expect(albumPageSource).not.toContain("previewRefreshTimer");
   });
 });

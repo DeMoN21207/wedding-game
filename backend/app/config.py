@@ -7,6 +7,7 @@ UNSAFE_ADMIN_PASSWORDS = {"", "change-me", "change-this-password"}
 UNSAFE_SECRET_KEYS = {"", "local-secret-change-me", "local-secret", "change-this-long-random-secret"}
 DEFAULT_MAX_UPLOAD_BYTES = 300 * 1024 * 1024
 DEFAULT_ORIGINAL_IMAGE_OPTIMIZE_MIN_BYTES = 5 * 1024 * 1024
+DEFAULT_DISK_FREE_RESERVE_BYTES = 5 * 1024 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class Settings:
     legacy_event_token: str
     secret_key: str
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
+    disk_free_reserve_bytes: int = DEFAULT_DISK_FREE_RESERVE_BYTES
     max_image_pixels: int = 25_000_000
     original_image_optimize_min_bytes: int = DEFAULT_ORIGINAL_IMAGE_OPTIMIZE_MIN_BYTES
     original_image_max_edge: int = 3200
@@ -93,6 +95,7 @@ def get_settings() -> Settings:
         legacy_event_token=os.getenv("EVENT_TOKEN", "imported-event"),
         secret_key=secret_key,
         max_upload_bytes=env_int("MAX_UPLOAD_BYTES", DEFAULT_MAX_UPLOAD_BYTES),
+        disk_free_reserve_bytes=env_int("DISK_FREE_RESERVE_BYTES", DEFAULT_DISK_FREE_RESERVE_BYTES),
         max_image_pixels=env_int("MAX_IMAGE_PIXELS", 25_000_000),
         original_image_optimize_min_bytes=env_int(
             "ORIGINAL_IMAGE_OPTIMIZE_MIN_BYTES",

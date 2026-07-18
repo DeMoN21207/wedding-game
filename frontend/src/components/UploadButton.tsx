@@ -2,6 +2,7 @@ import { Camera, CloudUpload, Download, ImagePlus, RefreshCw } from "lucide-reac
 import { memo, useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { RequestError, uploadPhoto } from "../api/client";
 import { appConfig } from "../config/appConfig";
+import { PartialUploadError, uploadSequentially } from "../features/upload/uploadBatch";
 
 type Props = {
   onUploaded: () => void;
@@ -45,6 +46,18 @@ export const UploadButton = memo(function UploadButton({ onUploaded, autoOpenCam
     }
   }, []);
 
+  const rememberLocalCopy = useCallback((file: File) => {
+    setLocalCopy((previous) => {
+      if (previous) {
+        URL.revokeObjectURL(previous.objectUrl);
+      }
+      return {
+        file,
+        objectUrl: URL.createObjectURL(file)
+      };
+    });
+  }, []);
+
   const startUpload = useCallback(async (nextInput: File | File[]) => {
     if (uploadingRef.current) {
       return;
@@ -71,24 +84,15 @@ export const UploadButton = memo(function UploadButton({ onUploaded, autoOpenCam
     uploadingRef.current = true;
     setIsUploading(true);
     try {
-      for (const [index, nextFile] of selectedFiles.entries()) {
-        setUploadStatus(selectedFiles.length > 1 ? `Загружаем ${index + 1} из ${selectedFiles.length}` : "Загружаем файл");
+      const completedFiles = await uploadSequentially(selectedFiles, async (nextFile, index, total) => {
+        setUploadStatus(total > 1 ? `Загружаем ${index + 1} из ${total}` : "Загружаем файл");
         await uploadPhoto(nextFile, (nextProgress) => {
-          const totalProgress = Math.round(((index + nextProgress / 100) / selectedFiles.length) * 100);
+          const totalProgress = Math.round(((index + nextProgress / 100) / total) * 100);
           setProgress(totalProgress);
         });
-      }
-
-      const lastFile = selectedFiles[selectedFiles.length - 1];
-      setLocalCopy((previous) => {
-        if (previous) {
-          URL.revokeObjectURL(previous.objectUrl);
-        }
-        return {
-          file: lastFile,
-          objectUrl: URL.createObjectURL(lastFile)
-        };
       });
+
+      rememberLocalCopy(completedFiles[completedFiles.length - 1]);
       setProgress(null);
       setUploadStatus(null);
       setSuccessMessage(selectedFiles.length > 1 ? `Загружено ${selectedFiles.length} файлов` : "Загружено");
@@ -98,12 +102,23 @@ export const UploadButton = memo(function UploadButton({ onUploaded, autoOpenCam
     } catch (err) {
       setProgress(null);
       setUploadStatus(null);
+      if (err instanceof PartialUploadError) {
+        const completedFiles = err.completedItems as File[];
+        const remainingFiles = err.remainingItems as File[];
+        setRetryFiles(remainingFiles);
+        if (completedFiles.length > 0) {
+          rememberLocalCopy(completedFiles[completedFiles.length - 1]);
+          setSuccessMessage(`Загружено ${completedFiles.length} из ${selectedFiles.length}`);
+          resetInputs();
+          onUploaded();
+        }
+      }
       setError(err instanceof RequestError || err instanceof Error ? err.message : "Не удалось загрузить файл.");
     } finally {
       uploadingRef.current = false;
       setIsUploading(false);
     }
-  }, [onUploaded, resetInputs]);
+  }, [onUploaded, rememberLocalCopy, resetInputs]);
 
   const saveLocalCopy = useCallback(async () => {
     if (!localCopy) {

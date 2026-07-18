@@ -12,6 +12,7 @@
 - `DATABASE_URL` - строка подключения к БД. Для production предпочтительнее PostgreSQL.
 - `DATA_DIR` - каталог с БД, временными файлами и фото.
 - `MAX_UPLOAD_BYTES` - лимит веса одного файла.
+- `DISK_FREE_RESERVE_BYTES` - неприкосновенный резерв диска для ОС, PostgreSQL и логов.
 - `MAX_IMAGE_PIXELS` - лимит разрешения изображения.
 - `WEB_CONCURRENCY` - число uvicorn worker'ов.
 

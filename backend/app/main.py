@@ -1,10 +1,12 @@
 import logging
+import shutil
 import time
 from pathlib import Path
+from typing import Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
@@ -19,6 +21,22 @@ INDEX_HEADERS = {
 }
 REQUEST_ID_HEADER = "X-Request-ID"
 logger = logging.getLogger("wedding.request")
+
+
+def is_photo_upload_path(path: str, app_base_path: str) -> bool:
+    """Определяет upload endpoint до того, как FastAPI начнет разбирать multipart body."""
+
+    return path in {"/api/photos", f"{app_base_path}/api/photos" if app_base_path else ""}
+
+
+def declared_body_size(request: Request) -> int:
+    """Безопасно читает объявленный Content-Length; неизвестный размер проверяется во время стрима."""
+
+    raw = request.headers.get("content-length", "")
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0
 
 
 def configure_logging() -> None:
@@ -50,6 +68,18 @@ def index_response(static_dir: Path) -> FileResponse:
     return FileResponse(static_dir / "index.html", headers=INDEX_HEADERS)
 
 
+def static_file_response(static_dir: Path, requested_path: str) -> Optional[FileResponse]:
+    """Безопасно отдает файл только из frontend-сборки, запрещая path traversal."""
+
+    static_root = static_dir.resolve()
+    candidate = (static_root / requested_path).resolve()
+    if not candidate.is_relative_to(static_root):
+        raise api_error(404, "STATIC_FILE_NOT_FOUND", "Static file not found.")
+    if requested_path and candidate.is_file():
+        return FileResponse(candidate)
+    return None
+
+
 def create_app() -> FastAPI:
     """Создает FastAPI-приложение, подключает API, медиа и SPA fallback."""
 
@@ -71,6 +101,21 @@ def create_app() -> FastAPI:
         started = time.monotonic()
         status_code = 500
         try:
+            if request.method == "POST" and is_photo_upload_path(request.url.path, settings.app_base_path):
+                body_size = declared_body_size(request)
+                free_bytes = shutil.disk_usage(settings.data_dir).free
+                if free_bytes - body_size < settings.disk_free_reserve_bytes:
+                    status_code = 507
+                    return JSONResponse(
+                        status_code=status_code,
+                        content={
+                            "detail": {
+                                "code": "STORAGE_FULL",
+                                "message": "На сервере заканчивается место. Сообщите организатору.",
+                            }
+                        },
+                        headers={REQUEST_ID_HEADER: request_id},
+                    )
             response = await call_next(request)
             status_code = response.status_code
             response.headers[REQUEST_ID_HEADER] = request_id
@@ -154,9 +199,9 @@ def create_app() -> FastAPI:
 
                 if full_path.startswith("api/"):
                     raise api_error(404, "API_NOT_FOUND", "API endpoint not found.")
-                candidate = static_dir / full_path
-                if full_path and candidate.exists() and candidate.is_file():
-                    return FileResponse(candidate)
+                static_response = static_file_response(static_dir, full_path)
+                if static_response is not None:
+                    return static_response
                 return index_response(static_dir)
 
             @app.get("/")
@@ -171,9 +216,9 @@ def create_app() -> FastAPI:
 
             if full_path.startswith("api/"):
                 raise api_error(404, "API_NOT_FOUND", "API endpoint not found.")
-            candidate = static_dir / full_path
-            if full_path and candidate.exists() and candidate.is_file():
-                return FileResponse(candidate)
+            static_response = static_file_response(static_dir, full_path)
+            if static_response is not None:
+                return static_response
             return index_response(static_dir)
 
     return app

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import hashlib
 import shutil
 import subprocess
@@ -60,6 +61,12 @@ class ImageTooLargeError(Exception):
     pass
 
 
+class StorageFullError(Exception):
+    """На диске недостаточно места с учетом обязательного резерва."""
+
+    pass
+
+
 def tmp_upload_path(settings: Settings) -> Path:
     """Создает уникальный путь для временного файла загрузки."""
 
@@ -68,23 +75,41 @@ def tmp_upload_path(settings: Settings) -> Path:
     return tmp_dir / f"{uuid.uuid4().hex}.part"
 
 
-def stream_upload(file: UploadFile, destination: Path, max_bytes: int) -> Tuple[int, str]:
+def stream_upload(
+    file: UploadFile,
+    destination: Path,
+    max_bytes: int,
+    min_free_bytes: int = 0,
+) -> Tuple[int, str]:
     """Потоково сохраняет upload на диск, считая размер и SHA-256 без чтения целиком в память."""
 
     digest = hashlib.sha256()
     size = 0
-    with destination.open("wb") as output:
-        while True:
-            chunk = file.file.read(1024 * 1024)
-            if not chunk:
-                break
-            size += len(chunk)
-            if size > max_bytes:
-                output.close()
-                destination.unlink(missing_ok=True)
-                raise UploadTooLargeError()
-            digest.update(chunk)
-            output.write(chunk)
+    try:
+        with destination.open("wb") as output:
+            while True:
+                chunk = file.file.read(1024 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > max_bytes:
+                    raise UploadTooLargeError()
+                if (
+                    min_free_bytes
+                    and size % (16 * 1024 * 1024) < len(chunk)
+                    and shutil.disk_usage(destination.parent).free - len(chunk) < min_free_bytes
+                ):
+                    raise StorageFullError()
+                digest.update(chunk)
+                output.write(chunk)
+    except OSError as exc:
+        destination.unlink(missing_ok=True)
+        if exc.errno == errno.ENOSPC:
+            raise StorageFullError() from exc
+        raise
+    except (StorageFullError, UploadTooLargeError):
+        destination.unlink(missing_ok=True)
+        raise
     return size, digest.hexdigest()
 
 
@@ -217,24 +242,73 @@ def optimize_original_image(
     return optimized_size, "jpg", "image/jpeg"
 
 
+def save_optimized_image(
+    original: Path,
+    destination: Path,
+    min_bytes: int,
+    max_edge: int,
+    quality: int,
+) -> Optional[Tuple[int, str, str]]:
+    """Создает уменьшенную JPEG-копию, не изменяя оригинал до успешной DB-транзакции."""
+
+    original_size = original.stat().st_size
+    if original_size < min_bytes:
+        return None
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.unlink(missing_ok=True)
+    try:
+        with Image.open(original) as image:
+            image = image_as_rgb(image)
+            if max(image.size) > max_edge:
+                image.thumbnail((max_edge, max_edge))
+            image.save(
+                destination,
+                format="JPEG",
+                quality=max(1, min(quality, 95)),
+                optimize=True,
+                progressive=True,
+            )
+        optimized_size = destination.stat().st_size
+        if optimized_size >= original_size:
+            destination.unlink(missing_ok=True)
+            return None
+        return optimized_size, "jpg", "image/jpeg"
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
+
+
 def save_preview(original: Path, preview: Path) -> None:
     """Создает JPEG-превью с учетом EXIF-поворота и прозрачности."""
 
     preview.parent.mkdir(parents=True, exist_ok=True)
-    with Image.open(original) as image:
-        image = image_as_rgb(image)
-        image.thumbnail((1600, 1600))
-        image.save(preview, format="JPEG", quality=82, optimize=True)
+    temporary_preview = preview.with_name(f"{preview.name}.{uuid.uuid4().hex}.tmp.jpg")
+    try:
+        with Image.open(original) as image:
+            image = image_as_rgb(image)
+            image.thumbnail((1600, 1600))
+            image.save(temporary_preview, format="JPEG", quality=82, optimize=True)
+        temporary_preview.replace(preview)
+    except Exception:
+        temporary_preview.unlink(missing_ok=True)
+        raise
 
 
 def save_thumbnail(source: Path, thumbnail: Path) -> None:
     """Создает маленький WebP-thumbnail для сеток и слайдеров, чтобы быстрее декодировать галерею."""
 
     thumbnail.parent.mkdir(parents=True, exist_ok=True)
-    with Image.open(source) as image:
-        image = image_as_rgb(image)
-        image.thumbnail((640, 640))
-        image.save(thumbnail, format="WEBP", quality=76, method=4)
+    temporary_thumbnail = thumbnail.with_name(f"{thumbnail.name}.{uuid.uuid4().hex}.tmp.webp")
+    try:
+        with Image.open(source) as image:
+            image = image_as_rgb(image)
+            image.thumbnail((640, 640))
+            image.save(temporary_thumbnail, format="WEBP", quality=76, method=4)
+        temporary_thumbnail.replace(thumbnail)
+    except Exception:
+        temporary_thumbnail.unlink(missing_ok=True)
+        raise
 
 
 def save_video_preview(original: Path, preview: Path) -> bool:

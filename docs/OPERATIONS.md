@@ -15,7 +15,7 @@
 
 ## Алерт по свободному месту
 
-Создать `/etc/wedding-events-ops.env`:
+Создать `/etc/wedding-events-ops.env`. Telegram-поля опциональны: без них предупреждение остается в `journalctl`.
 
 ```bash
 DISK_ALERT_PATH=/var/www/our-day-dv.ru/events-data
@@ -41,6 +41,17 @@ systemctl list-timers | grep wedding
 systemctl status wedding-disk-alert.timer
 journalctl -u wedding-disk-alert --since "1 hour ago" --no-pager
 ```
+
+## Защита upload и входа в админку
+
+Установить отдельные nginx-маршруты: upload передается приложению без двойной временной копии, а вход ограничивается пятью запросами в минуту с одного IP.
+
+```bash
+chmod +x deploy/apply-nginx-hardening.sh
+sudo deploy/apply-nginx-hardening.sh
+```
+
+Скрипт сначала выполняет `nginx -t` и только затем перезагружает конфигурацию.
 
 ## Лимит видео и диск
 

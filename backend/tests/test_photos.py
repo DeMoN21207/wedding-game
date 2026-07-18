@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
+from types import SimpleNamespace
 
 from conftest import auth_headers, create_event, create_guest
 from PIL import Image
@@ -47,8 +48,8 @@ def test_upload_returns_before_image_preview_is_ready_and_background_builds_it(c
     photo = response.json()
     assert photo["number"] == 1
     assert photo["media_type"] == "image"
-    assert photo["preview_url"] is None
-    assert photo["thumbnail_url"] is None
+    assert photo["preview_url"] == f"/media/previews/{photo['id']}"
+    assert photo["thumbnail_url"] == f"/media/thumbs/{photo['id']}"
 
     thumbnail = client.get(f"/media/thumbs/{photo['id']}")
     assert thumbnail.status_code == 200
@@ -183,6 +184,84 @@ def test_album_guest_gets_small_thumbnail_for_grid(client):
     thumbnail = Image.open(BytesIO(response.content))
     assert thumbnail.format == "WEBP"
     assert max(thumbnail.size) <= 640
+
+
+def test_image_thumbnail_lazily_recovers_after_interrupted_background_task(client):
+    """Оригинал изображения должен восстановить preview после рестарта worker'а."""
+
+    from app import db as db_module
+    from app.config import get_settings
+    from app.models import Photo
+    from app.storage import absolute_from_data, thumbnail_path
+
+    event = create_event(client, "Свадьба")
+    guest = create_guest(client, event["token"], "Восстановление")
+    uploaded = upload_photo(client, guest["guest_token"], image_bytes(), "recover.jpg").json()
+    settings = get_settings()
+
+    with db_module.SessionLocal() as db:
+        stored = db.query(Photo).filter(Photo.id == uploaded["id"]).one()
+        if stored.preview_path:
+            absolute_from_data(settings, stored.preview_path).unlink(missing_ok=True)
+        thumbnail_path(settings, stored.guest, stored.number).unlink(missing_ok=True)
+        stored.preview_path = None
+        db.commit()
+
+    gallery = client.get("/api/me/photos", headers=auth_headers(guest["guest_token"]))
+    assert gallery.json()[0]["thumbnail_url"] == f"/media/thumbs/{uploaded['id']}"
+
+    thumbnail = client.get(f"/media/thumbs/{uploaded['id']}")
+    preview = client.get(f"/media/previews/{uploaded['id']}")
+
+    assert thumbnail.status_code == 200
+    assert thumbnail.headers["content-type"].startswith("image/webp")
+    assert preview.status_code == 200
+    assert preview.headers["content-type"].startswith("image/jpeg")
+
+
+def test_preview_survives_optional_original_optimization_failure(client, monkeypatch):
+    """Ошибка фонового сжатия оригинала не должна удалять уже готовое превью."""
+
+    from app import db as db_module
+    from app.config import get_settings
+    from app.models import Photo
+    from app.routers import photos as photo_router
+    from app.storage import absolute_from_data
+
+    def fail_optimization(*_args, **_kwargs):
+        raise RuntimeError("optimization failed")
+
+    monkeypatch.setattr(photo_router, "optimize_stored_original", fail_optimization)
+    event = create_event(client, "Свадьба")
+    guest = create_guest(client, event["token"], "Надежность")
+    uploaded = upload_photo(client, guest["guest_token"], image_bytes(), "safe.jpg").json()
+
+    with db_module.SessionLocal() as db:
+        stored = db.query(Photo).filter(Photo.id == uploaded["id"]).one()
+        assert stored.preview_path is not None
+        assert absolute_from_data(get_settings(), stored.preview_path).exists()
+
+    assert client.get(f"/media/thumbs/{uploaded['id']}").status_code == 200
+
+
+def test_upload_refuses_when_file_would_consume_disk_reserve(client, monkeypatch):
+    """Загрузка не должна отнимать зарезервированные для ОС и PostgreSQL 5 ГБ."""
+
+    from app.routers import photos as photo_router
+
+    event = create_event(client, "Свадьба")
+    guest = create_guest(client, event["token"], "Диск")
+    monkeypatch.setattr(
+        photo_router.shutil,
+        "disk_usage",
+        lambda _: SimpleNamespace(total=30 * 1024**3, used=26 * 1024**3, free=4 * 1024**3),
+    )
+
+    response = upload_photo(client, guest["guest_token"], image_bytes(), "disk.jpg")
+
+    assert response.status_code == 507
+    assert response.json()["detail"]["code"] == "STORAGE_FULL"
+    assert client.get("/api/me/photos", headers=auth_headers(guest["guest_token"])).json() == []
 
 
 def test_upload_rejects_non_image_and_does_not_add_photo(client):

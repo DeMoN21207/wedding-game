@@ -20,9 +20,10 @@ from ..errors import api_error
 from ..images import (
     ImageTooLargeError,
     ImageValidationError,
+    StorageFullError,
     UploadTooLargeError,
     inspect_upload_media,
-    optimize_original_image,
+    save_optimized_image,
     save_preview,
     save_thumbnail,
     save_video_preview,
@@ -45,7 +46,7 @@ from ..storage import (
 
 router = APIRouter()
 media_router = APIRouter()
-preview_semaphore = BoundedSemaphore(2)
+preview_semaphore = BoundedSemaphore(1)
 thumbnail_semaphore = BoundedSemaphore(2)
 MEDIA_CACHE_HEADERS = {"Cache-Control": "public, max-age=31536000, immutable"}
 logger = logging.getLogger("wedding.photos")
@@ -85,6 +86,56 @@ def upload_limit_mb(settings: Settings) -> int:
     return max(1, math.ceil(settings.max_upload_bytes / 1024 / 1024))
 
 
+def ensure_upload_disk_space(settings: Settings, expected_size: int) -> None:
+    """Не начинает upload, который съест резерв ОС, PostgreSQL и логов."""
+
+    free_bytes = shutil.disk_usage(settings.data_dir).free
+    if free_bytes - max(0, expected_size) >= settings.disk_free_reserve_bytes:
+        return
+    raise api_error(507, "STORAGE_FULL", "На сервере заканчивается место. Сообщите организатору.")
+
+
+def optimize_stored_original(settings: Settings, db: Session, photo: Photo, original: Path) -> None:
+    """Атомарно оптимизирует большой оригинал в фоне, сохраняя исходник при ошибке."""
+
+    candidate = tmp_upload_path(settings).with_suffix(".optimized.jpg")
+    optimized = save_optimized_image(
+        original,
+        candidate,
+        settings.original_image_optimize_min_bytes,
+        settings.original_image_max_edge,
+        settings.original_image_quality,
+    )
+    if optimized is None:
+        return
+
+    size_bytes, extension, mime = optimized
+    final_optimized = original_path(settings, photo.guest, photo.number, extension)
+    previous_original = original
+    backup_original: Optional[Path] = None
+    if final_optimized == previous_original:
+        backup_original = previous_original.with_name(f"{previous_original.name}.before-optimization")
+        backup_original.unlink(missing_ok=True)
+        previous_original.replace(backup_original)
+    candidate.replace(final_optimized)
+    photo.original_path = relative_to_data(settings, final_optimized)
+    photo.size_bytes = size_bytes
+    photo.mime = mime
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        final_optimized.unlink(missing_ok=True)
+        if backup_original is not None:
+            backup_original.replace(previous_original)
+        raise
+    if backup_original is not None:
+        backup_original.unlink(missing_ok=True)
+    elif final_optimized != previous_original:
+        previous_original.unlink(missing_ok=True)
+    logger.info("original_optimized photo_id=%s size_bytes=%s", photo.id, size_bytes)
+
+
 def build_media_preview(settings: Settings, photo_id: int) -> None:
     """Создает preview, thumbnail и poster после ответа гостю, не блокируя загрузку."""
 
@@ -95,7 +146,7 @@ def build_media_preview(settings: Settings, photo_id: int) -> None:
             .filter(Photo.id == photo_id, Photo.status == "active")
             .one_or_none()
         )
-        if photo is None or photo.preview_path:
+        if photo is None:
             return
 
         original = absolute_from_data(settings, photo.original_path)
@@ -105,21 +156,31 @@ def build_media_preview(settings: Settings, photo_id: int) -> None:
 
         final_preview = preview_path(settings, photo.guest, photo.number)
         final_thumbnail = thumbnail_path(settings, photo.guest, photo.number)
-        try:
-            with preview_semaphore:
-                if photo.mime.startswith("video/"):
-                    if not save_video_preview(original, final_preview):
-                        logger.warning("video_preview_empty photo_id=%s original=%s", photo.id, original)
-                        return
-                else:
-                    save_preview(original, final_preview)
-                save_thumbnail(final_preview, final_thumbnail)
-            photo.preview_path = relative_to_data(settings, final_preview)
-            logger.info("preview_ready photo_id=%s thumbnail=%s", photo.id, final_thumbnail)
-        except Exception:
-            final_preview.unlink(missing_ok=True)
-            final_thumbnail.unlink(missing_ok=True)
-            logger.exception("preview_failed photo_id=%s", photo.id)
+        with preview_semaphore:
+            try:
+                if not photo.preview_path:
+                    if photo.mime.startswith("video/"):
+                        if not save_video_preview(original, final_preview):
+                            logger.warning("video_preview_empty photo_id=%s original=%s", photo.id, original)
+                            return
+                    else:
+                        save_preview(original, final_preview)
+                    save_thumbnail(final_preview, final_thumbnail)
+                    photo.preview_path = relative_to_data(settings, final_preview)
+                    db.commit()
+            except Exception:
+                db.rollback()
+                final_preview.unlink(missing_ok=True)
+                final_thumbnail.unlink(missing_ok=True)
+                logger.exception("preview_failed photo_id=%s", photo.id)
+                return
+
+            if not photo.mime.startswith("video/"):
+                try:
+                    optimize_stored_original(settings, db, photo, original)
+                except Exception:
+                    logger.exception("original_optimization_failed photo_id=%s", photo.id)
+        logger.info("preview_ready photo_id=%s thumbnail=%s", photo.id, final_thumbnail)
 
 
 @router.post("/photos", response_model=PhotoOut)
@@ -137,11 +198,20 @@ def upload_photo(
     tmp_path = tmp_upload_path(settings)
     filename = file.filename or "unnamed"
     logger.info("upload_start guest_id=%s guest_slug=%s filename=%r", guest.id, guest.slug, filename)
+    ensure_upload_disk_space(settings, int(file.size or 0))
     try:
-        size_bytes, sha256 = stream_upload(file, tmp_path, settings.max_upload_bytes)
+        size_bytes, sha256 = stream_upload(
+            file,
+            tmp_path,
+            settings.max_upload_bytes,
+            settings.disk_free_reserve_bytes,
+        )
     except UploadTooLargeError:
         logger.warning("upload_rejected_too_large guest_id=%s guest_slug=%s filename=%r", guest.id, guest.slug, filename)
         raise api_error(413, "FILE_TOO_LARGE", f"Файл больше {upload_limit_mb(settings)} МБ.") from None
+    except StorageFullError:
+        logger.error("upload_rejected_storage_full guest_id=%s guest_slug=%s filename=%r", guest.id, guest.slug, filename)
+        raise api_error(507, "STORAGE_FULL", "На сервере заканчивается место. Сообщите организатору.") from None
 
     active_duplicate = (
         db.query(Photo)
@@ -193,24 +263,6 @@ def upload_photo(
             "UNSUPPORTED_MEDIA_TYPE",
             "Выберите фото или видео: JPEG, PNG, WebP, HEIC, MP4, MOV или WebM.",
         ) from None
-
-    if media_type == "image":
-        optimized = optimize_original_image(
-            tmp_path,
-            settings.original_image_optimize_min_bytes,
-            settings.original_image_max_edge,
-            settings.original_image_quality,
-        )
-        if optimized is not None:
-            size_bytes, extension, mime = optimized
-            logger.info(
-                "upload_optimized_original guest_id=%s guest_slug=%s filename=%r size_bytes=%s extension=%s",
-                guest.id,
-                guest.slug,
-                filename,
-                size_bytes,
-                extension,
-            )
 
     number = reserve_photo_number(db, guest.id)
     ensure_guest_dirs(settings, guest)
@@ -330,16 +382,18 @@ def ensure_thumbnail(settings: Settings, photo: Photo) -> Path:
     """Возвращает WebP-thumbnail, создавая его из превью для старых фото без отдельной миграции."""
 
     if not photo.preview_path:
-        if not photo.mime.startswith("video/"):
-            raise api_error(404, "THUMBNAIL_NOT_FOUND", "Thumbnail еще не готов.")
         original = absolute_from_data(settings, photo.original_path)
         if not original.exists():
             raise api_error(404, "ORIGINAL_NOT_FOUND", "Оригинал видео не найден.")
         final_preview = preview_path(settings, photo.guest, photo.number)
         final_thumbnail = thumbnail_path(settings, photo.guest, photo.number)
         with preview_semaphore:
-            if not final_preview.exists() and not save_video_preview(original, final_preview):
-                raise api_error(404, "THUMBNAIL_NOT_READY", "Постер видео еще не готов.")
+            if not final_preview.exists():
+                if photo.mime.startswith("video/"):
+                    if not save_video_preview(original, final_preview):
+                        raise api_error(404, "THUMBNAIL_NOT_READY", "Постер видео еще не готов.")
+                else:
+                    save_preview(original, final_preview)
             if not final_thumbnail.exists():
                 save_thumbnail(final_preview, final_thumbnail)
         photo.preview_path = relative_to_data(settings, final_preview)
@@ -376,7 +430,8 @@ def get_preview(
             headers=MEDIA_CACHE_HEADERS,
         )
     if not photo.preview_path:
-        raise api_error(404, "PREVIEW_NOT_FOUND", "Превью еще не готово.")
+        ensure_thumbnail(settings, photo)
+        db.commit()
     return FileResponse(absolute_from_data(settings, photo.preview_path), headers=MEDIA_CACHE_HEADERS)
 
 

@@ -47,7 +47,6 @@ const EMPTY_ALBUM: AlbumDashboard = {
 
 export function AlbumPage({ cameraMode = false }: Props) {
   const uploadRef = useRef<HTMLDivElement | null>(null);
-  const previewRefreshTimer = useRef<number | null>(null);
   const [album, setAlbum] = useState<AlbumDashboard>(EMPTY_ALBUM);
   const [me, setMe] = useState<Me | null>(null);
   const [myPhotos, setMyPhotos] = useState<Photo[]>([]);
@@ -90,13 +89,20 @@ export function AlbumPage({ cameraMode = false }: Props) {
     }
   }, []);
 
+  const loadMyPhotos = useCallback(async () => {
+    if (!getGuestToken()) {
+      setMyPhotos([]);
+      return;
+    }
+    setMyPhotos(await getMyPhotos());
+  }, []);
+
   const refresh = useCallback(async (showLoading = true) => {
     if (showLoading) {
       setLoading(true);
     }
     try {
-      await loadAlbum();
-      await loadGuest();
+      await Promise.all([loadAlbum(), loadGuest()]);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось открыть альбом.");
@@ -116,12 +122,6 @@ export function AlbumPage({ cameraMode = false }: Props) {
       window.setTimeout(() => uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
     }
   }, [cameraMode, me]);
-
-  useEffect(() => () => {
-    if (previewRefreshTimer.current) {
-      window.clearTimeout(previewRefreshTimer.current);
-    }
-  }, []);
 
   const showIntro = useCallback(() => {
     setNeedsIntro(true);
@@ -144,14 +144,14 @@ export function AlbumPage({ cameraMode = false }: Props) {
       setGuestToken(guest.guest_token);
       setGuestNickname(guest.nickname);
       setNickname(guest.nickname);
-      await refresh();
+      await loadGuest();
       setNeedsIntro(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось войти.");
     } finally {
       setSaving(false);
     }
-  }, [nickname, refresh]);
+  }, [loadGuest, nickname]);
 
   const remove = useCallback(async (photo: Photo) => {
     if (!confirm(appConfig.deletePhotoConfirm(photo.number))) {
@@ -197,15 +197,10 @@ export function AlbumPage({ cameraMode = false }: Props) {
   }, []);
 
   const handleUploaded = useCallback(() => {
-    void refresh();
-    if (previewRefreshTimer.current) {
-      window.clearTimeout(previewRefreshTimer.current);
-    }
-    previewRefreshTimer.current = window.setTimeout(() => {
-      previewRefreshTimer.current = null;
-      void refresh(false);
-    }, 1800);
-  }, [refresh]);
+    void Promise.all([loadAlbum(), loadMyPhotos()]).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Не удалось обновить загруженные файлы.");
+    });
+  }, [loadAlbum, loadMyPhotos]);
 
   const closeLightbox = useCallback(() => {
     setLightboxPhoto(null);

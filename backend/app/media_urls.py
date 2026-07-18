@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .models import Photo
 
 
@@ -9,17 +7,13 @@ def photo_media_type(photo: Photo) -> str:
     return "video" if photo.mime.startswith("video/") else "image"
 
 
-def photo_preview_url(photo: Photo) -> Optional[str]:
+def photo_preview_url(photo: Photo) -> str:
     """Возвращает публичный URL просмотра фото или видео."""
 
-    if photo_media_type(photo) == "video":
-        return f"/media/previews/{photo.id}"
-    return f"/media/previews/{photo.id}" if photo.preview_path else None
+    return f"/media/previews/{photo.id}"
 
 
-def photo_thumbnail_url(photo: Photo) -> Optional[str]:
+def photo_thumbnail_url(photo: Photo) -> str:
     """Возвращает публичный URL маленького thumbnail для сеток и слайдеров."""
 
-    if photo_media_type(photo) == "video":
-        return f"/media/thumbs/{photo.id}"
-    return f"/media/thumbs/{photo.id}" if photo.preview_path else None
+    return f"/media/thumbs/{photo.id}"
