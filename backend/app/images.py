@@ -245,7 +245,7 @@ def save_video_preview(original: Path, preview: Path) -> bool:
         return False
 
     preview.parent.mkdir(parents=True, exist_ok=True)
-    temporary_preview = preview.with_name(f"{preview.name}.tmp.jpg")
+    temporary_preview = preview.with_name(f"{preview.name}.{uuid.uuid4().hex}.tmp.jpg")
     temporary_preview.unlink(missing_ok=True)
     command = [
         ffmpeg,

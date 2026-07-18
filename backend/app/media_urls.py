@@ -20,4 +20,6 @@ def photo_preview_url(photo: Photo) -> Optional[str]:
 def photo_thumbnail_url(photo: Photo) -> Optional[str]:
     """Возвращает публичный URL маленького thumbnail для сеток и слайдеров."""
 
+    if photo_media_type(photo) == "video":
+        return f"/media/thumbs/{photo.id}"
     return f"/media/thumbs/{photo.id}" if photo.preview_path else None

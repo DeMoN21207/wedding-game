@@ -330,7 +330,20 @@ def ensure_thumbnail(settings: Settings, photo: Photo) -> Path:
     """Возвращает WebP-thumbnail, создавая его из превью для старых фото без отдельной миграции."""
 
     if not photo.preview_path:
-        raise api_error(404, "THUMBNAIL_NOT_FOUND", "Thumbnail еще не готов.")
+        if not photo.mime.startswith("video/"):
+            raise api_error(404, "THUMBNAIL_NOT_FOUND", "Thumbnail еще не готов.")
+        original = absolute_from_data(settings, photo.original_path)
+        if not original.exists():
+            raise api_error(404, "ORIGINAL_NOT_FOUND", "Оригинал видео не найден.")
+        final_preview = preview_path(settings, photo.guest, photo.number)
+        final_thumbnail = thumbnail_path(settings, photo.guest, photo.number)
+        with preview_semaphore:
+            if not final_preview.exists() and not save_video_preview(original, final_preview):
+                raise api_error(404, "THUMBNAIL_NOT_READY", "Постер видео еще не готов.")
+            if not final_thumbnail.exists():
+                save_thumbnail(final_preview, final_thumbnail)
+        photo.preview_path = relative_to_data(settings, final_preview)
+        return final_thumbnail
     thumbnail = thumbnail_path(settings, photo.guest, photo.number)
     legacy_thumbnail = legacy_thumbnail_path(settings, photo.guest, photo.number)
     if thumbnail.exists():
@@ -377,7 +390,11 @@ def get_thumbnail(
     """Отдает маленький thumbnail для сеток, слайдеров и слабых устройств."""
 
     photo = visible_photo_for_request(request, db, settings, photo_id, originals_admin_only=False)
-    return FileResponse(ensure_thumbnail(settings, photo), headers=MEDIA_CACHE_HEADERS)
+    preview_was_missing = not photo.preview_path
+    thumbnail = ensure_thumbnail(settings, photo)
+    if preview_was_missing and photo.preview_path:
+        db.commit()
+    return FileResponse(thumbnail, headers=MEDIA_CACHE_HEADERS)
 
 
 @media_router.get("/media/downloads/{photo_id}")

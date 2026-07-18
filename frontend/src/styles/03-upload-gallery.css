@@ -83,30 +83,22 @@
   line-height: 0;
 }
 
-.moments-photo-button img,
-.moments-photo-placeholder,
-.moments-video-placeholder {
+.moments-photo-button .media-preview,
+.moments-photo-placeholder {
   width: 100%;
   aspect-ratio: 1.5;
   display: grid;
   place-items: center;
-  object-fit: cover;
 }
 
-.moments-photo-button img {
+.moments-photo-button .media-preview {
   backface-visibility: hidden;
   transform: translateZ(0);
 }
 
-.video-poster.moments-video-placeholder {
-  aspect-ratio: auto;
-  display: block;
-}
-
-.moments-photo-button .video-poster img {
-  height: auto;
-  aspect-ratio: auto;
-  object-fit: contain;
+.moments-photo-button .media-preview-image {
+  height: 100%;
+  object-fit: cover;
 }
 
 .my-photos-section {
@@ -311,15 +303,6 @@
 .wedding-photo-grid .photo-thumb,
 .wedding-photo-grid .image-placeholder {
   aspect-ratio: 1.08;
-}
-
-.wedding-photo-grid .photo-thumb-button img.photo-thumb,
-.wedding-photo-grid .photo-thumb-button .video-poster.photo-thumb,
-.moments-photo-button img,
-.moments-photo-button .video-poster {
-  height: auto;
-  aspect-ratio: auto;
-  object-fit: contain;
 }
 
 .wedding-photo-grid .photo-meta {

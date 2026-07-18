@@ -85,7 +85,7 @@ def test_upload_accepts_iphone_mov_video_and_serves_it(client, monkeypatch):
     photo = response.json()
     assert photo["media_type"] == "video"
     assert photo["preview_url"] == "/media/previews/1"
-    assert photo["thumbnail_url"] is None
+    assert photo["thumbnail_url"] == "/media/thumbs/1"
 
     gallery = client.get("/api/me/photos", headers=auth_headers(guest["guest_token"]))
     assert gallery.status_code == 200
@@ -106,6 +106,54 @@ def test_upload_accepts_iphone_mov_video_and_serves_it(client, monkeypatch):
     download = client.get(f"/media/downloads/{photo['id']}")
     assert download.status_code == 200
     assert download.headers["content-type"].startswith("video/quicktime")
+
+
+def test_video_thumbnail_url_lazily_builds_missing_poster(client, monkeypatch):
+    """Видео получает адрес poster-thumbnail сразу и чинит отсутствующий постер по запросу."""
+
+    from app.config import get_settings
+    from app.db import SessionLocal
+    from app.models import Photo
+    from app.routers import photos as photo_router
+    from app.storage import absolute_from_data, thumbnail_path
+
+    def fake_video_preview(original, preview):
+        preview.parent.mkdir(parents=True, exist_ok=True)
+        image = Image.new("RGB", (900, 600), color=(80, 130, 190))
+        image.save(preview, format="JPEG")
+        return True
+
+    monkeypatch.setattr(photo_router, "save_video_preview", fake_video_preview)
+    event = create_event(client, "Свадьба")
+    guest = create_guest(client, event["token"], "Постер")
+    uploaded = upload_photo(
+        client,
+        guest["guest_token"],
+        iphone_mov_bytes(),
+        "moment.mov",
+        "video/quicktime",
+    ).json()
+    settings = get_settings()
+
+    with SessionLocal() as db:
+        stored = db.query(Photo).filter(Photo.id == uploaded["id"]).one()
+        if stored.preview_path:
+            absolute_from_data(settings, stored.preview_path).unlink(missing_ok=True)
+        thumbnail_path(settings, stored.guest, stored.number).unlink(missing_ok=True)
+        stored.preview_path = None
+        db.commit()
+
+    gallery = client.get("/api/me/photos", headers=auth_headers(guest["guest_token"]))
+    assert gallery.status_code == 200
+    assert gallery.json()[0]["thumbnail_url"] == f"/media/thumbs/{uploaded['id']}"
+
+    thumbnail = client.get(f"/media/thumbs/{uploaded['id']}")
+    assert thumbnail.status_code == 200
+    assert thumbnail.headers["content-type"].startswith("image/webp")
+
+    with SessionLocal() as db:
+        repaired = db.query(Photo).filter(Photo.id == uploaded["id"]).one()
+        assert repaired.preview_path is not None
 
 
 def test_album_guest_can_see_another_guest_preview(client):

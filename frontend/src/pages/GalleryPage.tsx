@@ -3,7 +3,7 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { appPath, GalleryPhoto, getGalleryPhotos } from "../api/client";
 import { LightboxPhoto, PhotoLightbox } from "../components/PhotoLightbox";
-import { VideoPoster } from "../components/VideoPoster";
+import { MediaPreview } from "../components/MediaPreview";
 import { formatShortDate } from "../utils/format";
 
 const PAGE_SIZE = 48;
@@ -22,24 +22,14 @@ const GalleryCard = memo(function GalleryCard({ photo, onOpenPhoto, priority = f
     <article className="gallery-card">
       {thumbUrl || isVideo ? (
         <button className="gallery-card-thumb" type="button" title="Открыть файл" onClick={() => onOpenPhoto(photo)}>
-          {isVideo ? (
-            <VideoPoster
-              posterUrl={photo.thumbnail_url}
-              label={`${photo.guest_nickname}, видео ${photo.number}`}
-              className="gallery-card-video"
-              loading={priority ? "eager" : "lazy"}
-              fetchPriority={priority ? "high" : "auto"}
-            />
-          ) : (
-            <img
-              src={appPath(thumbUrl ?? "")}
-              alt={`${photo.guest_nickname}, фото ${photo.number}`}
-              loading={priority ? "eager" : "lazy"}
-              decoding="async"
-              fetchPriority={priority ? "high" : "auto"}
-              width={640}
-            />
-          )}
+          <MediaPreview
+            mediaType={photo.media_type}
+            imageUrl={isVideo ? photo.thumbnail_url : thumbUrl}
+            alt={`${photo.guest_nickname}, ${isVideo ? "видео" : "фото"} ${photo.number}`}
+            className="gallery-card-media"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+          />
         </button>
       ) : (
         <div className="gallery-card-placeholder">

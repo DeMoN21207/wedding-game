@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 // @ts-expect-error В проекте нет node-типов, но Vitest выполняет этот тест в Node.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const foundationStyles = readFileSync(new URL("./01-foundation.css", import.meta.url), "utf8");
 const uploadGalleryStyles = readFileSync(new URL("./03-upload-gallery.css", import.meta.url), "utf8");
 const responsiveStyles = readFileSync(new URL("./06-responsive.css", import.meta.url), "utf8");
 const photoCardSource = readFileSync(new URL("../components/PhotoCard.tsx", import.meta.url), "utf8");
-const videoPosterSource = readFileSync(new URL("../components/VideoPoster.tsx", import.meta.url), "utf8");
+const mediaPreviewUrl = new URL("../components/MediaPreview.tsx", import.meta.url);
+const mediaPreviewSource = existsSync(mediaPreviewUrl) ? readFileSync(mediaPreviewUrl, "utf8") : "";
 const dashboardRecentSource = readFileSync(new URL("../features/album/DashboardRecent.tsx", import.meta.url), "utf8");
 const galleryPageSource = readFileSync(new URL("../pages/GalleryPage.tsx", import.meta.url), "utf8");
 const adminPageSource = readFileSync(new URL("../pages/AdminPage.tsx", import.meta.url), "utf8");
@@ -25,47 +26,58 @@ describe("frontend performance safeguards", () => {
     expect(foundationStyles).toMatch(/html\.lite \*\s*\{[^}]*backdrop-filter:\s*none !important;[^}]*-webkit-backdrop-filter:\s*none !important;/s);
   });
 
-  it("показывает мобильную галерею masonry без растягивания фото", () => {
+  it("показывает мобильную галерею ровной сеткой без растягивания фото", () => {
     expect(responsiveStyles).toContain(`.gallery-grid {
-    display: block;
-    column-count: 2;
-    column-gap: 9px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
   }`);
-    expect(responsiveStyles).toContain(`.gallery-card-thumb img {
+    expect(responsiveStyles).toContain(`.gallery-card-thumb .media-preview-image {
     width: 100%;
-    height: auto;
-    aspect-ratio: auto;
+    height: 100%;
+    aspect-ratio: 4 / 5;
     display: block;
-    object-fit: contain;
+    object-fit: cover;
   }`);
     expect(responsiveStyles).toContain(`.gallery-card-meta {
     position: static;`);
   });
 
-  it("не задает квадратную высоту гостевым фото на главной", () => {
+  it("держит гостевые превью на главной единым медиаслоем", () => {
     expect(photoCardSource).not.toContain("height={640}");
     expect(dashboardRecentSource).not.toContain("height={640}");
-    expect(uploadGalleryStyles).toContain(`.wedding-photo-grid .photo-thumb-button img.photo-thumb,
-.wedding-photo-grid .photo-thumb-button .video-poster.photo-thumb,
-.moments-photo-button img,
-.moments-photo-button .video-poster {
-  height: auto;
-  aspect-ratio: auto;
-  object-fit: contain;
+    expect(uploadGalleryStyles).toContain(`.moments-photo-button .media-preview,
+.moments-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 1.5;`);
+    expect(uploadGalleryStyles).toContain(`.moments-photo-button .media-preview-image {
+  height: 100%;
+  object-fit: cover;
 }`);
+    expect(uploadGalleryStyles).not.toContain(".moments-photo-button .media-preview-image {\n  height: auto;");
   });
 
-  it("показывает video poster вместо растянутой заглушки, когда thumbnail готов", () => {
-    expect(videoPosterSource).toContain("posterUrl");
-    expect(videoPosterSource).toContain("video-play-badge");
-    expect(photoCardSource).toContain("VideoPoster");
-    expect(dashboardRecentSource).toContain("VideoPoster");
-    expect(galleryPageSource).toContain("VideoPoster");
-    expect(responsiveStyles).toContain(`.video-poster.gallery-card-video {
-    min-height: 0;
-    height: auto;
-    aspect-ratio: auto;
-    display: block;
+  it("показывает видео как тот же preview с play-иконкой", () => {
+    expect(mediaPreviewSource).toContain("mediaType === \"video\"");
+    expect(mediaPreviewSource).toContain("media-preview-play");
+    expect(mediaPreviewSource).toContain("onError={() => setFailedUrl(visibleImageUrl)}");
+    expect(photoCardSource).not.toContain("VideoPoster");
+    expect(dashboardRecentSource).not.toContain("VideoPoster");
+    expect(galleryPageSource).not.toContain("VideoPoster");
+  });
+
+  it("использует единый медиаслой для фото и видео в мобильной галерее", () => {
+    expect(mediaPreviewSource).toContain("media-preview");
+    expect(mediaPreviewSource).toContain("media-preview-play");
+    expect(mediaPreviewSource).toContain("media-preview-image");
+    expect(photoCardSource).toContain("MediaPreview");
+    expect(dashboardRecentSource).toContain("MediaPreview");
+    expect(galleryPageSource).toContain("MediaPreview");
+    expect(galleryPageSource).not.toContain("VideoPoster");
+    expect(responsiveStyles).toContain(`.gallery-card-thumb .media-preview {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 5;
   }`);
   });
 

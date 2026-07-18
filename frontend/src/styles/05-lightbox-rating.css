@@ -91,29 +91,23 @@
   line-height: 0;
 }
 
-.gallery-card-thumb img,
-.gallery-card-placeholder,
-.gallery-card-video {
+.gallery-card-thumb .media-preview,
+.gallery-card-placeholder {
   width: 100%;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  object-fit: cover;
   background: linear-gradient(135deg, oklch(94% 0.016 72), oklch(90% 0.026 126));
   color: var(--muted);
 }
 
-.gallery-card-thumb img {
-  height: 100%;
-}
-
-.video-poster.gallery-card-video {
-  display: block;
-}
-
-.video-poster.gallery-card-video img {
+.gallery-card-thumb .media-preview-image {
   height: 100%;
   object-fit: cover;
+}
+
+.gallery-card-thumb .media-preview.is-empty {
+  min-height: 150px;
 }
 
 .gallery-card-meta {

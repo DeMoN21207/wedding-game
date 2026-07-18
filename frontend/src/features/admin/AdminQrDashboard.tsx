@@ -1,8 +1,8 @@
 import { AlertTriangle, Download, HardDrive, Image, Images, QrCode, Users, Video } from "lucide-react";
 import { memo } from "react";
-import { appPath, type AdminQr, type AdminStorage, type AlbumDashboard, type AlbumPhoto } from "../../api/client";
+import { type AdminQr, type AdminStorage, type AlbumDashboard, type AlbumPhoto } from "../../api/client";
 import { GuestAvatar } from "../../components/GuestAvatar";
-import { VideoPoster } from "../../components/VideoPoster";
+import { MediaPreview } from "../../components/MediaPreview";
 import { formatBytes } from "../../utils/format";
 
 type TopGuest = AlbumDashboard["top_guests"][number];
@@ -122,11 +122,12 @@ export const AdminQrDashboard = memo(function AdminQrDashboard({ album, cameraQr
                   title="Открыть файл"
                   onClick={() => onOpenRecentPhoto(photo)}
                 >
-                  {photo.media_type === "video" ? (
-                    <VideoPoster posterUrl={photo.thumbnail_url} label={`Видео ${photo.number}`} className="recent-thumb-video" />
-                  ) : (
-                    <img src={appPath(photo.thumbnail_url ?? photo.preview_url ?? "")} alt={`Фото ${photo.number}`} loading="lazy" decoding="async" />
-                  )}
+                  <MediaPreview
+                    mediaType={photo.media_type}
+                    imageUrl={photo.media_type === "video" ? photo.thumbnail_url : photo.thumbnail_url ?? photo.preview_url}
+                    alt={`${photo.media_type === "video" ? "Видео" : "Фото"} ${photo.number}`}
+                    className="recent-thumb-media"
+                  />
                 </button>
               ) : (
                 <div className="recent-thumb-placeholder" key={photo.id}>#{photo.number.toString().padStart(3, "0")}</div>

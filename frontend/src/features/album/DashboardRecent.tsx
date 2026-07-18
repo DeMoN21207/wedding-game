@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import { A11y, Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
-import { appPath, type AlbumPhoto } from "../../api/client";
-import { VideoPoster } from "../../components/VideoPoster";
+import { type AlbumPhoto } from "../../api/client";
+import { MediaPreview } from "../../components/MediaPreview";
 
 type SliderHandle = {
   slidePrev: (speed?: number, runCallbacks?: boolean) => void;
@@ -93,24 +93,14 @@ export const DashboardRecent = memo(function DashboardRecent({ photos, loading, 
               <SwiperSlide className="moments-slide" key={photo.id}>
                 {photo.thumbnail_url || photo.preview_url ? (
                   <button className="moments-photo-button" type="button" title="Открыть файл" onClick={() => onOpenPhoto(photo)}>
-                    {photo.media_type === "video" ? (
-                      <VideoPoster
-                        posterUrl={photo.thumbnail_url}
-                        label={`${photo.guest_nickname}, видео ${photo.number}`}
-                        className="moments-video-placeholder"
-                        loading={index < 4 ? "eager" : "lazy"}
-                        fetchPriority={index < 4 ? "high" : "auto"}
-                      />
-                    ) : (
-                      <img
-                        src={appPath(photo.thumbnail_url ?? photo.preview_url ?? "")}
-                        alt={`${photo.guest_nickname}, фото ${photo.number}`}
-                        loading={index < 4 ? "eager" : "lazy"}
-                        decoding="async"
-                        fetchPriority={index < 4 ? "high" : "auto"}
-                        width={640}
-                      />
-                    )}
+                    <MediaPreview
+                      mediaType={photo.media_type}
+                      imageUrl={photo.media_type === "video" ? photo.thumbnail_url : photo.thumbnail_url ?? photo.preview_url}
+                      alt={`${photo.guest_nickname}, ${photo.media_type === "video" ? "видео" : "фото"} ${photo.number}`}
+                      className="moments-media-preview"
+                      loading={index < 4 ? "eager" : "lazy"}
+                      fetchPriority={index < 4 ? "high" : "auto"}
+                    />
                   </button>
                 ) : (
                   <div className="moments-photo-placeholder">#{photo.number.toString().padStart(3, "0")}</div>
