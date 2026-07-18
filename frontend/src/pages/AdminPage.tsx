@@ -12,6 +12,7 @@ import {
   getAdminCameraQr,
   getAdminGuests,
   getAdminPhotos,
+  getAdminSession,
   getAdminStorage,
   getAlbum,
   logoutAdmin,
@@ -40,8 +41,10 @@ const EMPTY_ALBUM: AlbumDashboard = {
   top_guests: []
 };
 
+type AdminAuthState = "checking" | "logged-in" | "logged-out";
+
 export function AdminPage() {
-  const [loggedIn, setLoggedIn] = useState(true);
+  const [authState, setAuthState] = useState<AdminAuthState>("checking");
   const [tab, setTab] = useState<AdminTab>("qr");
   const [album, setAlbum] = useState<AlbumDashboard>(EMPTY_ALBUM);
   const [guests, setGuests] = useState<AdminGuest[]>([]);
@@ -91,10 +94,9 @@ export function AdminPage() {
         setPhotos(nextPhotos);
       }
       setError(null);
-      setLoggedIn(true);
     } catch (err) {
       if (err instanceof RequestError && err.status === 401) {
-        setLoggedIn(false);
+        setAuthState("logged-out");
         return;
       }
       setError(err instanceof Error ? err.message : "Ошибка админки.");
@@ -102,13 +104,26 @@ export function AdminPage() {
   }, [loadQrCodes, tab]);
 
   useEffect(() => {
+    void getAdminSession()
+      .then(() => setAuthState("logged-in"))
+      .catch((err: unknown) => {
+        if (!(err instanceof RequestError && err.status === 401)) {
+          setError(err instanceof Error ? err.message : "Не удалось проверить вход в админку.");
+        }
+        setAuthState("logged-out");
+      });
+  }, []);
+
+  useEffect(() => {
+    if (authState !== "logged-in") {
+      return;
+    }
     void loadSection();
-  }, [loadSection]);
+  }, [authState, loadSection]);
 
   const handleLoggedIn = useCallback(() => {
-    setLoggedIn(true);
-    void loadSection();
-  }, [loadSection]);
+    setAuthState("logged-in");
+  }, []);
 
   const remove = useCallback(async (photo: AdminPhoto) => {
     await deleteAdminPhoto(photo.id);
@@ -131,7 +146,7 @@ export function AdminPage() {
 
   const handleLogout = useCallback(async () => {
     await logoutAdmin();
-    setLoggedIn(false);
+    setAuthState("logged-out");
   }, []);
 
   const openRecentPhoto = useCallback((photo: AlbumPhoto) => {
@@ -162,7 +177,11 @@ export function AdminPage() {
     setLightboxPhoto(null);
   }, []);
 
-  if (!loggedIn) {
+  if (authState === "checking") {
+    return <main className="admin-login" aria-busy="true">Проверяем вход...</main>;
+  }
+
+  if (authState === "logged-out") {
     return <AdminLogin onLoggedIn={handleLoggedIn} />;
   }
 

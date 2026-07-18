@@ -201,6 +201,11 @@ def logout_admin(response: Response) -> None:
     response.delete_cookie(ADMIN_COOKIE)
 
 
+@router.get("/session", status_code=204, dependencies=[Depends(require_admin)])
+def check_admin_session() -> None:
+    """Проверяет действительность админской cookie без загрузки данных."""
+
+
 @router.get("/events", response_model=list[EventOut], dependencies=[Depends(require_admin)])
 def list_events(db: Session = Depends(get_db)) -> list[EventOut]:
     """Возвращает события для старой модели QR по событиям."""

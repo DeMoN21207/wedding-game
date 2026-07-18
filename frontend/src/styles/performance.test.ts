@@ -88,6 +88,14 @@ describe("frontend performance safeguards", () => {
     expect(adminPageSource).toContain("getAdminStorage()");
   });
 
+  it("проверяет админскую сессию до загрузки защищенных данных", () => {
+    expect(adminPageSource).toContain('type AdminAuthState = "checking" | "logged-in" | "logged-out"');
+    expect(adminPageSource).toContain('useState<AdminAuthState>("checking")');
+    expect(adminPageSource).toContain("getAdminSession()");
+    expect(adminPageSource).toContain('if (authState !== "logged-in")');
+    expect(adminPageSource).not.toContain("useState(true)");
+  });
+
   it("повторно обновляет альбом после фоновой подготовки превью", () => {
     expect(albumPageSource).toContain("previewRefreshTimer");
     expect(albumPageSource).toContain("window.setTimeout");

@@ -10,6 +10,7 @@ import {
   getAdminCameraQr,
   getAdminGuests,
   getAdminPhotos,
+  getAdminSession,
   getAdminStorage,
   getAlbum,
   getGalleryPhotos,
@@ -182,6 +183,7 @@ describe("api client", () => {
       body: { password: "admin-pass" }
     });
     await expectJsonRequest(() => logoutAdmin(), "/api/admin/logout", { method: "POST" });
+    await expectJsonRequest(() => getAdminSession(), "/api/admin/session");
     await expectJsonRequest(() => getAdminGuests(), "/api/admin/guests");
     await expectJsonRequest(() => getAdminGuests(7), "/api/admin/guests?event_id=7");
     await expectJsonRequest(() => getAdminPhotos("active"), "/api/admin/photos?status=active");

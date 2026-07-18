@@ -235,6 +235,10 @@ export function logoutAdmin(): Promise<void> {
   return api<void>("/api/admin/logout", { method: "POST" });
 }
 
+export function getAdminSession(): Promise<void> {
+  return api<void>("/api/admin/session");
+}
+
 export function getAdminGuests(eventId?: number): Promise<AdminGuest[]> {
   const query = eventId ? `?event_id=${eventId}` : "";
   return api<AdminGuest[]>(`/api/admin/guests${query}`);

@@ -13,6 +13,21 @@ def test_admin_requires_login(client):
     assert response.json()["detail"]["code"] == "ADMIN_REQUIRED"
 
 
+def test_admin_session_checks_cookie_without_loading_dashboard(client):
+    anonymous = client.get("/api/admin/session")
+
+    assert anonymous.status_code == 401
+    assert anonymous.json()["detail"]["code"] == "ADMIN_REQUIRED"
+
+    from conftest import login_admin
+
+    login_admin(client)
+    authenticated = client.get("/api/admin/session")
+
+    assert authenticated.status_code == 204
+    assert authenticated.content == b""
+
+
 def test_unknown_api_route_returns_json_404(client):
     response = client.get("/api/admin/missing-route")
 
