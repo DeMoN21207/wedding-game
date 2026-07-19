@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .db import configure_database, create_schema, migrate_legacy_schema
-from .errors import api_error
+from .errors import STORAGE_FULL_MESSAGE, api_error
 from .routers import admin, album, guests, photos
 from .storage import ensure_storage
 
@@ -111,7 +111,7 @@ def create_app() -> FastAPI:
                         content={
                             "detail": {
                                 "code": "STORAGE_FULL",
-                                "message": "На сервере заканчивается место. Сообщите организатору.",
+                                "message": STORAGE_FULL_MESSAGE,
                             }
                         },
                         headers={REQUEST_ID_HEADER: request_id},

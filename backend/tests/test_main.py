@@ -21,7 +21,11 @@ def test_upload_is_rejected_before_multipart_parsing_when_disk_reserve_is_at_ris
     monkeypatch.setattr(
         main.shutil,
         "disk_usage",
-        lambda _: SimpleNamespace(total=30 * 1024**3, used=26 * 1024**3, free=4 * 1024**3),
+        lambda _: SimpleNamespace(
+            total=30 * 1024**3,
+            used=30 * 1024**3 - 205 * 1024**2,
+            free=205 * 1024**2,
+        ),
     )
 
     response = client.post(
@@ -32,3 +36,6 @@ def test_upload_is_rejected_before_multipart_parsing_when_disk_reserve_is_at_ris
 
     assert response.status_code == 507
     assert response.json()["detail"]["code"] == "STORAGE_FULL"
+    assert response.json()["detail"]["message"] == (
+        "Спасибо за ваши фото! Альбом заполнен, новые файлы больше не принимаются."
+    )

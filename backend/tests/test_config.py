@@ -50,7 +50,7 @@ def test_development_allows_local_defaults(monkeypatch, tmp_path):
 
     assert settings.admin_password == "change-me"
     assert settings.secret_key == "local-secret-change-me"
-    assert settings.disk_free_reserve_bytes == 5 * 1024 * 1024 * 1024
+    assert settings.disk_free_reserve_bytes == 200 * 1024 * 1024
 
 
 def test_disk_reserve_can_be_configured(monkeypatch, tmp_path):

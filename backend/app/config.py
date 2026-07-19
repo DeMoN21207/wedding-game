@@ -7,7 +7,7 @@ UNSAFE_ADMIN_PASSWORDS = {"", "change-me", "change-this-password"}
 UNSAFE_SECRET_KEYS = {"", "local-secret-change-me", "local-secret", "change-this-long-random-secret"}
 DEFAULT_MAX_UPLOAD_BYTES = 300 * 1024 * 1024
 DEFAULT_ORIGINAL_IMAGE_OPTIMIZE_MIN_BYTES = 5 * 1024 * 1024
-DEFAULT_DISK_FREE_RESERVE_BYTES = 5 * 1024 * 1024 * 1024
+DEFAULT_DISK_FREE_RESERVE_BYTES = 200 * 1024 * 1024
 
 
 @dataclass(frozen=True)

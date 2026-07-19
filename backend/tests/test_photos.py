@@ -245,7 +245,7 @@ def test_preview_survives_optional_original_optimization_failure(client, monkeyp
 
 
 def test_upload_refuses_when_file_would_consume_disk_reserve(client, monkeypatch):
-    """Загрузка не должна отнимать зарезервированные для ОС и PostgreSQL 5 ГБ."""
+    """Загрузка не должна отнимать последние зарезервированные 200 МБ."""
 
     from app.routers import photos as photo_router
 
@@ -254,13 +254,20 @@ def test_upload_refuses_when_file_would_consume_disk_reserve(client, monkeypatch
     monkeypatch.setattr(
         photo_router.shutil,
         "disk_usage",
-        lambda _: SimpleNamespace(total=30 * 1024**3, used=26 * 1024**3, free=4 * 1024**3),
+        lambda _: SimpleNamespace(
+            total=30 * 1024**3,
+            used=30 * 1024**3 - 190 * 1024**2,
+            free=190 * 1024**2,
+        ),
     )
 
     response = upload_photo(client, guest["guest_token"], image_bytes(), "disk.jpg")
 
     assert response.status_code == 507
     assert response.json()["detail"]["code"] == "STORAGE_FULL"
+    assert response.json()["detail"]["message"] == (
+        "Спасибо за ваши фото! Альбом заполнен, новые файлы больше не принимаются."
+    )
     assert client.get("/api/me/photos", headers=auth_headers(guest["guest_token"])).json() == []
 
 

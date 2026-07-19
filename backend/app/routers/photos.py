@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session, joinedload
 from ..config import Settings
 from ..db import get_db, session_scope
 from ..deps import get_app_settings, get_current_guest, is_admin_request
-from ..errors import api_error
+from ..errors import STORAGE_FULL_MESSAGE, api_error
 from ..images import (
     ImageTooLargeError,
     ImageValidationError,
@@ -92,7 +92,7 @@ def ensure_upload_disk_space(settings: Settings, expected_size: int) -> None:
     free_bytes = shutil.disk_usage(settings.data_dir).free
     if free_bytes - max(0, expected_size) >= settings.disk_free_reserve_bytes:
         return
-    raise api_error(507, "STORAGE_FULL", "На сервере заканчивается место. Сообщите организатору.")
+    raise api_error(507, "STORAGE_FULL", STORAGE_FULL_MESSAGE)
 
 
 def optimize_stored_original(settings: Settings, db: Session, photo: Photo, original: Path) -> None:
@@ -211,7 +211,7 @@ def upload_photo(
         raise api_error(413, "FILE_TOO_LARGE", f"Файл больше {upload_limit_mb(settings)} МБ.") from None
     except StorageFullError:
         logger.error("upload_rejected_storage_full guest_id=%s guest_slug=%s filename=%r", guest.id, guest.slug, filename)
-        raise api_error(507, "STORAGE_FULL", "На сервере заканчивается место. Сообщите организатору.") from None
+        raise api_error(507, "STORAGE_FULL", STORAGE_FULL_MESSAGE) from None
 
     active_duplicate = (
         db.query(Photo)
