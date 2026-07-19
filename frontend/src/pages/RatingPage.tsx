@@ -9,6 +9,7 @@ import statGuestsIcon from "../assets/rating/stat-guests.png";
 import statPhotosIcon from "../assets/rating/stat-photos.png";
 import statTrophyIcon from "../assets/rating/stat-trophy.png";
 import { GuestAvatar } from "../components/GuestAvatar";
+import { HomeLink } from "../components/HomeLink";
 import { formatShortDate } from "../utils/format";
 
 const EMPTY_RATING: Rating = {
@@ -106,6 +107,9 @@ export function RatingPage() {
 
   return (
     <main className="guest-shell rating-shell wedding-screen">
+      <nav className="page-home-nav" aria-label="Навигация страницы">
+        <HomeLink />
+      </nav>
       <section className="rating-summary-grid" aria-label="Статистика рейтинга">
         <article className="rating-summary-card">
           <img className="rating-summary-icon" src={statTrophyIcon} alt="" aria-hidden="true" />

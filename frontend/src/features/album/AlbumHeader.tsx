@@ -2,18 +2,20 @@ import { Heart, LogOut, UserRound } from "lucide-react";
 import { memo } from "react";
 import type { Me } from "../../api/client";
 import { GuestAvatar } from "../../components/GuestAvatar";
+import { HomeLink } from "../../components/HomeLink";
 import { appConfig } from "../../config/appConfig";
 
 type AlbumHeaderProps = {
   me: Me | null;
   onLogout: () => void;
   onShowIntro: () => void;
+  showHomeLink?: boolean;
 };
 
 /**
  * Верхняя панель гостевой страницы с названием альбома и текущим гостем.
  */
-export const AlbumHeader = memo(function AlbumHeader({ me, onLogout, onShowIntro }: AlbumHeaderProps) {
+export const AlbumHeader = memo(function AlbumHeader({ me, onLogout, onShowIntro, showHomeLink = false }: AlbumHeaderProps) {
   return (
     <header className="album-redesign-nav">
       <div className="album-brand">
@@ -23,6 +25,7 @@ export const AlbumHeader = memo(function AlbumHeader({ me, onLogout, onShowIntro
         <span>{appConfig.albumTitle}</span>
       </div>
       <div className="album-nav-actions">
+        {showHomeLink && <HomeLink />}
         {me ? (
           <button className="guest-session-pill album-user-pill" title="Выйти" onClick={onLogout}>
             <GuestAvatar avatarIndex={me.avatar_index} className="guest-session-avatar" nickname={me.nickname} seed={me.slug} />

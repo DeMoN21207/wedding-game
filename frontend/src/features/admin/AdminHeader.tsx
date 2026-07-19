@@ -1,5 +1,6 @@
 import { Camera, LogOut } from "lucide-react";
 import { memo } from "react";
+import { HomeLink } from "../../components/HomeLink";
 
 type AdminHeaderProps = {
   onLogout: () => void;
@@ -20,9 +21,12 @@ export const AdminHeader = memo(function AdminHeader({ onLogout }: AdminHeaderPr
           <h1>Медиатека</h1>
         </div>
       </div>
-      <button className="icon-button" title="Выйти" onClick={onLogout}>
-        <LogOut size={18} />
-      </button>
+      <div className="admin-header-actions">
+        <HomeLink />
+        <button className="icon-button" title="Выйти" aria-label="Выйти" onClick={onLogout}>
+          <LogOut size={18} />
+        </button>
+      </div>
     </header>
   );
 });

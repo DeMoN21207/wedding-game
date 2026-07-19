@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react";
 import { memo, useCallback, useState, type ChangeEvent, type FormEvent } from "react";
 import { loginAdmin, RequestError } from "../api/client";
+import { HomeLink } from "../components/HomeLink";
 
 type Props = {
   onLoggedIn: () => void;
@@ -31,6 +32,7 @@ export const AdminLogin = memo(function AdminLogin({ onLoggedIn }: Props) {
 
   return (
     <main className="admin-login">
+      <HomeLink className="admin-login-home" />
       <form className="entry-form" onSubmit={submit}>
         <div className="entry-mark compact">
           <Lock size={28} />

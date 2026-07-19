@@ -208,7 +208,7 @@ export function AlbumPage({ cameraMode = false }: Props) {
 
   return (
     <main className="guest-shell album-shell wedding-screen album-redesign">
-      <AlbumHeader me={me} onLogout={logout} onShowIntro={showIntro} />
+      <AlbumHeader me={me} onLogout={logout} onShowIntro={showIntro} showHomeLink={cameraMode} />
       <AlbumHero />
 
       <section className="album-redesign-layout">

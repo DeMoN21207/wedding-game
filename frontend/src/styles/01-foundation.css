@@ -225,6 +225,14 @@ html.lite .wedding-admin-screen::after {
   line-height: 1;
 }
 
+.page-home-nav {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 14px;
+}
+
 .guest-session-avatar {
   width: 30px;
   height: 30px;

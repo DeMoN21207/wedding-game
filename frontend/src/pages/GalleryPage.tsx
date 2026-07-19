@@ -1,8 +1,9 @@
-import { ArrowLeft, Camera, Download, Images, RefreshCw } from "lucide-react";
+import { Camera, Download, Images, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { appPath, GalleryPhoto, getGalleryPhotos } from "../api/client";
 import { LightboxPhoto, PhotoLightbox } from "../components/PhotoLightbox";
+import { HomeLink } from "../components/HomeLink";
 import { MediaPreview } from "../components/MediaPreview";
 import { formatShortDate } from "../utils/format";
 
@@ -116,9 +117,7 @@ export function GalleryPage() {
           <h1>Все фото и видео</h1>
         </div>
         <div className="gallery-top-actions">
-          <Link className="icon-button" title="На главную" to="/">
-            <ArrowLeft size={18} />
-          </Link>
+          <HomeLink />
           <Link className="icon-button" title="Добавить фото" to="/camera">
             <Camera size={18} />
           </Link>

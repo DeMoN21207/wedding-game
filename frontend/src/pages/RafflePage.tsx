@@ -10,6 +10,7 @@ import winnerSideRibbon from "../assets/giveaway/winner/winner-side-ribbon.png";
 import winnerSparkle from "../assets/giveaway/winner/winner-sparkle.png";
 import winnerStar from "../assets/giveaway/winner/winner-star.png";
 import { GuestAvatar } from "../components/GuestAvatar";
+import { HomeLink } from "../components/HomeLink";
 import {
   buildGiveawayParticipants,
   buildGiveawayWheelSlots,
@@ -426,6 +427,9 @@ export function RafflePage() {
 
   return (
     <main className="giveaway-page">
+      <nav className="page-home-nav giveaway-home-nav" aria-label="Навигация страницы">
+        <HomeLink />
+      </nav>
       <section className="giveaway-hero">
         <div className="giveaway-wheel-column" aria-live="polite">
           <img className="giveaway-pointer" src={wheelPointerIcon} alt="" />
