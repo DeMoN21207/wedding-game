@@ -76,6 +76,16 @@
 }
 
 @media (max-width: 760px) {
+  .home-link {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .home-link-label {
+    display: none;
+  }
+
   .album-redesign {
     padding: calc(16px + env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   }

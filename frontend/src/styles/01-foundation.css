@@ -190,6 +190,41 @@ html.lite .wedding-admin-screen::after {
   box-shadow: 0 10px 24px oklch(29% 0.035 32 / 0.08);
 }
 
+.home-link {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  color: var(--rose);
+  background: oklch(99% 0.006 58 / 0.94);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px oklch(29% 0.035 32 / 0.07);
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.home-link:hover {
+  color: oklch(49% 0.14 24);
+  border-color: oklch(74% 0.075 28);
+  box-shadow: 0 10px 24px oklch(55% 0.12 22 / 0.12);
+}
+
+.home-link:focus-visible {
+  outline: 3px solid oklch(74% 0.105 43 / 0.32);
+  outline-offset: 2px;
+}
+
+.home-link-label {
+  line-height: 1;
+}
+
 .guest-session-avatar {
   width: 30px;
   height: 30px;
