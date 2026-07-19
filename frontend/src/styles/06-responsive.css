@@ -634,9 +634,22 @@
     padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
 
-  .photo-lightbox img,
-  .lightbox-video {
+  .photo-lightbox-slide img,
+  .photo-lightbox-slide .lightbox-video {
     max-height: calc(100dvh - 112px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .lightbox-navigation {
+    width: 46px;
+    height: 46px;
+  }
+
+  .lightbox-previous {
+    left: max(4px, env(safe-area-inset-left));
+  }
+
+  .lightbox-next {
+    right: max(4px, env(safe-area-inset-right));
   }
 
   .lightbox-close {

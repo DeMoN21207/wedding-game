@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   AlbumDashboard,
   AlbumPhoto,
@@ -11,7 +11,7 @@ import {
   registerGuest,
   RequestError
 } from "../api/client";
-import { LightboxPhoto, PhotoLightbox } from "../components/PhotoLightbox";
+import { LightboxPhoto, LightboxSelection, PhotoLightbox } from "../components/PhotoLightbox";
 import { UploadButton } from "../components/UploadButton";
 import { appConfig } from "../config/appConfig";
 import { AlbumHeader } from "../features/album/AlbumHeader";
@@ -56,7 +56,7 @@ export function AlbumPage({ cameraMode = false }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nicknameError, setNicknameError] = useState<string | null>(null);
-  const [lightboxPhoto, setLightboxPhoto] = useState<LightboxPhoto | null>(null);
+  const [lightboxSelection, setLightboxSelection] = useState<LightboxSelection | null>(null);
 
   const loadAlbum = useCallback(async () => {
     const nextAlbum = await getAlbum();
@@ -170,33 +170,39 @@ export function AlbumPage({ cameraMode = false }: Props) {
     setNeedsIntro(true);
   }, []);
 
+  const recentLightboxItems = useMemo<LightboxPhoto[]>(() => album.recent_photos.flatMap((photo) => photo.preview_url ? [{
+    id: photo.id,
+    src: photo.preview_url,
+    alt: `${photo.guest_nickname}, ${photo.media_type === "video" ? "видео" : "фото"} ${photo.number}`,
+    title: photo.guest_nickname,
+    mediaType: photo.media_type,
+    meta: `${photo.media_type === "video" ? "Видео" : "Фото"} #${photo.number.toString().padStart(3, "0")}`,
+    downloadUrl: `/media/downloads/${photo.id}`
+  }] : []), [album.recent_photos]);
+
+  const myLightboxItems = useMemo<LightboxPhoto[]>(() => myPhotos.flatMap((photo) => photo.preview_url ? [{
+    id: photo.id,
+    src: photo.preview_url,
+    alt: `Мое ${photo.media_type === "video" ? "видео" : "фото"} ${photo.number}`,
+    title: photo.media_type === "video" ? "Мое видео" : "Мое фото",
+    mediaType: photo.media_type,
+    meta: `#${photo.number.toString().padStart(3, "0")}`,
+    downloadUrl: `/media/downloads/${photo.id}`
+  }] : []), [myPhotos]);
+
   const openAlbumPhoto = useCallback((photo: AlbumPhoto) => {
-    if (!photo.preview_url) {
-      return;
+    const activeIndex = recentLightboxItems.findIndex((item) => item.id === photo.id);
+    if (activeIndex >= 0) {
+      setLightboxSelection({ items: recentLightboxItems, activeIndex });
     }
-    setLightboxPhoto({
-      src: photo.preview_url,
-      alt: `${photo.guest_nickname}, ${photo.media_type === "video" ? "видео" : "фото"} ${photo.number}`,
-      title: photo.guest_nickname,
-      mediaType: photo.media_type,
-      meta: `${photo.media_type === "video" ? "Видео" : "Фото"} #${photo.number.toString().padStart(3, "0")}`,
-      downloadUrl: `/media/downloads/${photo.id}`
-    });
-  }, []);
+  }, [recentLightboxItems]);
 
   const openMyPhoto = useCallback((photo: Photo) => {
-    if (!photo.preview_url) {
-      return;
+    const activeIndex = myLightboxItems.findIndex((item) => item.id === photo.id);
+    if (activeIndex >= 0) {
+      setLightboxSelection({ items: myLightboxItems, activeIndex });
     }
-    setLightboxPhoto({
-      src: photo.preview_url,
-      alt: `Мое ${photo.media_type === "video" ? "видео" : "фото"} ${photo.number}`,
-      title: photo.media_type === "video" ? "Мое видео" : "Мое фото",
-      mediaType: photo.media_type,
-      meta: `#${photo.number.toString().padStart(3, "0")}`,
-      downloadUrl: `/media/downloads/${photo.id}`
-    });
-  }, []);
+  }, [myLightboxItems]);
 
   const handleUploaded = useCallback(() => {
     void Promise.all([loadAlbum(), loadMyPhotos()]).catch((err: unknown) => {
@@ -205,7 +211,11 @@ export function AlbumPage({ cameraMode = false }: Props) {
   }, [loadAlbum, loadMyPhotos]);
 
   const closeLightbox = useCallback(() => {
-    setLightboxPhoto(null);
+    setLightboxSelection(null);
+  }, []);
+
+  const selectLightboxIndex = useCallback((activeIndex: number) => {
+    setLightboxSelection((current) => current ? { ...current, activeIndex } : null);
   }, []);
 
   return (
@@ -243,7 +253,7 @@ export function AlbumPage({ cameraMode = false }: Props) {
         />
       )}
 
-      <PhotoLightbox photo={lightboxPhoto} onClose={closeLightbox} />
+      <PhotoLightbox selection={lightboxSelection} onActiveIndexChange={selectLightboxIndex} onClose={closeLightbox} />
     </main>
   );
 }

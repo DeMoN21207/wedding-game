@@ -1,8 +1,8 @@
 import { Camera, Download, Images, RefreshCw } from "lucide-react";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { appPath, GalleryPhoto, getGalleryPhotos } from "../api/client";
-import { LightboxPhoto, PhotoLightbox } from "../components/PhotoLightbox";
+import { LightboxPhoto, LightboxSelection, PhotoLightbox } from "../components/PhotoLightbox";
 import { HomeLink } from "../components/HomeLink";
 import { MediaPreview } from "../components/MediaPreview";
 import { formatShortDate } from "../utils/format";
@@ -57,7 +57,7 @@ export function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lightboxPhoto, setLightboxPhoto] = useState<LightboxPhoto | null>(null);
+  const [lightboxSelection, setLightboxSelection] = useState<LightboxSelection | null>(null);
 
   const loadPage = useCallback(async (offset: number, replace = false) => {
     if (replace) {
@@ -83,19 +83,22 @@ export function GalleryPage() {
     void loadPage(0, true);
   }, [loadPage]);
 
+  const galleryLightboxItems = useMemo<LightboxPhoto[]>(() => photos.flatMap((photo) => photo.preview_url ? [{
+    id: photo.id,
+    src: photo.preview_url,
+    alt: `${photo.guest_nickname}, ${photo.media_type === "video" ? "видео" : "фото"} ${photo.number}`,
+    title: photo.guest_nickname,
+    mediaType: photo.media_type,
+    meta: `${photo.media_type === "video" ? "Видео" : "Фото"} #${photo.number.toString().padStart(3, "0")} · ${formatShortDate(photo.created_at)}`,
+    downloadUrl: photo.download_url
+  }] : []), [photos]);
+
   const openPhoto = useCallback((photo: GalleryPhoto) => {
-    if (!photo.preview_url) {
-      return;
+    const activeIndex = galleryLightboxItems.findIndex((item) => item.id === photo.id);
+    if (activeIndex >= 0) {
+      setLightboxSelection({ items: galleryLightboxItems, activeIndex });
     }
-    setLightboxPhoto({
-      src: photo.preview_url,
-      alt: `${photo.guest_nickname}, ${photo.media_type === "video" ? "видео" : "фото"} ${photo.number}`,
-      title: photo.guest_nickname,
-      mediaType: photo.media_type,
-      meta: `${photo.media_type === "video" ? "Видео" : "Фото"} #${photo.number.toString().padStart(3, "0")} · ${formatShortDate(photo.created_at)}`,
-      downloadUrl: photo.download_url
-    });
-  }, []);
+  }, [galleryLightboxItems]);
 
   const refreshGallery = useCallback(() => {
     void loadPage(0, true);
@@ -106,7 +109,11 @@ export function GalleryPage() {
   }, [loadPage, photos.length]);
 
   const closeLightbox = useCallback(() => {
-    setLightboxPhoto(null);
+    setLightboxSelection(null);
+  }, []);
+
+  const selectLightboxIndex = useCallback((activeIndex: number) => {
+    setLightboxSelection((current) => current ? { ...current, activeIndex } : null);
   }, []);
 
   return (
@@ -152,7 +159,7 @@ export function GalleryPage() {
         </button>
       )}
 
-      <PhotoLightbox photo={lightboxPhoto} onClose={closeLightbox} />
+      <PhotoLightbox selection={lightboxSelection} onActiveIndexChange={selectLightboxIndex} onClose={closeLightbox} />
     </main>
   );
 }

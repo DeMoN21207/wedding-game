@@ -605,13 +605,30 @@ th {
 .photo-lightbox {
   position: relative;
   width: min(100%, 1080px);
+  min-width: 0;
   display: grid;
   justify-items: center;
   gap: 12px;
 }
 
-.photo-lightbox img,
-.lightbox-video {
+.photo-lightbox-swiper {
+  width: 100%;
+  min-width: 0;
+}
+
+.photo-lightbox-swiper .swiper-wrapper {
+  align-items: center;
+}
+
+.photo-lightbox-slide {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+}
+
+.photo-lightbox-slide img,
+.photo-lightbox-slide .lightbox-video {
+  display: block;
   max-width: 100%;
   max-height: calc(100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   object-fit: contain;
@@ -629,7 +646,7 @@ th {
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 1;
+  z-index: 4;
   color: var(--rose);
   box-shadow: 0 12px 30px oklch(6% 0.018 35 / 0.22);
 }
@@ -638,9 +655,34 @@ th {
   position: absolute;
   top: 10px;
   right: 62px;
-  z-index: 1;
+  z-index: 4;
   color: var(--rose);
   box-shadow: 0 12px 30px oklch(6% 0.018 35 / 0.22);
+}
+
+.lightbox-navigation {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  top: 50%;
+  z-index: 4;
+  border-color: oklch(100% 0 0 / 0.34);
+  background: oklch(16% 0.02 35 / 0.72);
+  color: white;
+  box-shadow: 0 12px 32px oklch(6% 0.018 35 / 0.3);
+  transform: translateY(-50%);
+}
+
+.lightbox-navigation:hover {
+  background: oklch(22% 0.03 35 / 0.88);
+}
+
+.lightbox-previous {
+  left: 12px;
+}
+
+.lightbox-next {
+  right: 12px;
 }
 
 .lightbox-caption {

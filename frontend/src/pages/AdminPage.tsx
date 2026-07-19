@@ -21,7 +21,7 @@ import {
   RequestError
 } from "../api/client";
 import { AdminLogin } from "./AdminLogin";
-import { LightboxPhoto, PhotoLightbox } from "../components/PhotoLightbox";
+import { LightboxPhoto, LightboxSelection, PhotoLightbox } from "../components/PhotoLightbox";
 import { appConfig } from "../config/appConfig";
 import { AdminGuestsTable } from "../features/admin/AdminGuestsTable";
 import { AdminHeader } from "../features/admin/AdminHeader";
@@ -53,11 +53,31 @@ export function AdminPage() {
   const [cameraQr, setCameraQr] = useState<AdminQr | null>(null);
   const [storage, setStorage] = useState<AdminStorage | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [lightboxPhoto, setLightboxPhoto] = useState<LightboxPhoto | null>(null);
+  const [lightboxSelection, setLightboxSelection] = useState<LightboxSelection | null>(null);
   const qrCache = useRef<{ qr: AdminQr; cameraQr: AdminQr } | null>(null);
 
   const topGuests = useMemo(() => album.top_guests.filter((guest) => guest.active_photo_count > 0).slice(0, 5), [album.top_guests]);
   const recentPhotos = useMemo(() => album.recent_photos.slice(0, 10), [album.recent_photos]);
+  const recentLightboxItems = useMemo<LightboxPhoto[]>(() => recentPhotos.flatMap((photo) => photo.preview_url ? [{
+    id: photo.id,
+    src: photo.preview_url,
+    alt: `${photo.media_type === "video" ? "Видео" : "Фото"} ${photo.number}`,
+    title: photo.guest_nickname,
+    mediaType: photo.media_type,
+    meta: `#${photo.number.toString().padStart(3, "0")}`
+  }] : []), [recentPhotos]);
+  const adminLightboxItems = useMemo<LightboxPhoto[]>(() => photos.flatMap((photo) => {
+    const src = photo.original_url || photo.preview_url;
+    return src ? [{
+      id: photo.id,
+      src,
+      alt: `${photo.media_type === "video" ? "Видео" : "Фото"} ${photo.number}`,
+      title: photo.guest_nickname,
+      mediaType: photo.media_type,
+      meta: `#${photo.number.toString().padStart(3, "0")} · ${Math.round(photo.size_bytes / 1024)} КБ`,
+      downloadUrl: photo.original_url
+    }] : [];
+  }), [photos]);
 
   const loadQrCodes = useCallback(async () => {
     if (qrCache.current) {
@@ -150,31 +170,25 @@ export function AdminPage() {
   }, []);
 
   const openRecentPhoto = useCallback((photo: AlbumPhoto) => {
-    if (!photo.preview_url) {
-      return;
+    const activeIndex = recentLightboxItems.findIndex((item) => item.id === photo.id);
+    if (activeIndex >= 0) {
+      setLightboxSelection({ items: recentLightboxItems, activeIndex });
     }
-    setLightboxPhoto({
-      src: photo.preview_url,
-      alt: `${photo.media_type === "video" ? "Видео" : "Фото"} ${photo.number}`,
-      title: photo.guest_nickname,
-      mediaType: photo.media_type,
-      meta: `#${photo.number.toString().padStart(3, "0")}`
-    });
-  }, []);
+  }, [recentLightboxItems]);
 
   const openAdminPhoto = useCallback((photo: AdminPhoto) => {
-    setLightboxPhoto({
-      src: photo.original_url || photo.preview_url || "",
-      alt: `${photo.media_type === "video" ? "Видео" : "Фото"} ${photo.number}`,
-      title: photo.guest_nickname,
-      mediaType: photo.media_type,
-      meta: `#${photo.number.toString().padStart(3, "0")} · ${Math.round(photo.size_bytes / 1024)} КБ`,
-      downloadUrl: photo.original_url
-    });
-  }, []);
+    const activeIndex = adminLightboxItems.findIndex((item) => item.id === photo.id);
+    if (activeIndex >= 0) {
+      setLightboxSelection({ items: adminLightboxItems, activeIndex });
+    }
+  }, [adminLightboxItems]);
 
   const closeLightbox = useCallback(() => {
-    setLightboxPhoto(null);
+    setLightboxSelection(null);
+  }, []);
+
+  const selectLightboxIndex = useCallback((activeIndex: number) => {
+    setLightboxSelection((current) => current ? { ...current, activeIndex } : null);
   }, []);
 
   if (authState === "checking") {
@@ -218,7 +232,7 @@ export function AdminPage() {
         />
       )}
 
-      <PhotoLightbox photo={lightboxPhoto} onClose={closeLightbox} />
+      <PhotoLightbox selection={lightboxSelection} onActiveIndexChange={selectLightboxIndex} onClose={closeLightbox} />
     </main>
   );
 }
