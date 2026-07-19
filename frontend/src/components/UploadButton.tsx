@@ -1,8 +1,8 @@
 import { Camera, CloudUpload, Download, ImagePlus, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { RequestError, uploadPhoto } from "../api/client";
+import { uploadPhoto } from "../api/client";
 import { appConfig } from "../config/appConfig";
-import { PartialUploadError, uploadSequentially } from "../features/upload/uploadBatch";
+import { PartialUploadError, uploadFailureMessage, uploadSequentially } from "../features/upload/uploadBatch";
 
 type Props = {
   onUploaded: () => void;
@@ -113,7 +113,7 @@ export const UploadButton = memo(function UploadButton({ onUploaded, autoOpenCam
           onUploaded();
         }
       }
-      setError(err instanceof RequestError || err instanceof Error ? err.message : "Не удалось загрузить файл.");
+      setError(uploadFailureMessage(err));
     } finally {
       uploadingRef.current = false;
       setIsUploading(false);

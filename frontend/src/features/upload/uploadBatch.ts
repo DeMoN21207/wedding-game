@@ -12,6 +12,11 @@ export class PartialUploadError<T> extends Error {
   }
 }
 
+/** Возвращает понятный текст upload-ошибки без потери сообщения backend. */
+export function uploadFailureMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Не удалось загрузить файл.";
+}
+
 /**
  * Загружает файлы последовательно и сохраняет точную границу частичного успеха для безопасного повтора.
  */

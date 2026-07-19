@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PartialUploadError, uploadSequentially } from "./uploadBatch";
+import { PartialUploadError, uploadFailureMessage, uploadSequentially } from "./uploadBatch";
 
 describe("uploadSequentially", () => {
   it("загружает элементы строго по порядку", async () => {
@@ -26,5 +26,13 @@ describe("uploadSequentially", () => {
       message: "Связь оборвалась"
     });
     expect(uploadOne).toHaveBeenCalledTimes(2);
+  });
+
+  it("показывает гостю сообщение заполненного альбома без технического текста", () => {
+    const error = new Error("Спасибо за ваши фото! Альбом заполнен, новые файлы больше не принимаются.");
+
+    expect(uploadFailureMessage(error)).toBe(
+      "Спасибо за ваши фото! Альбом заполнен, новые файлы больше не принимаются."
+    );
   });
 });

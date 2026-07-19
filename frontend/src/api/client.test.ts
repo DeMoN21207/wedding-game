@@ -255,6 +255,26 @@ describe("api client", () => {
     await expect(resultPromise).rejects.toMatchObject({ status: 413, code: "FILE_TOO_LARGE" });
   });
 
+  it("preserves the friendly storage-full upload message", async () => {
+    setGuestToken("upload-token");
+    vi.stubGlobal("XMLHttpRequest", MockXMLHttpRequest);
+    const resultPromise = uploadPhoto(new File(["image"], "photo.jpg"), vi.fn());
+    const xhr = MockXMLHttpRequest.instances[0];
+
+    xhr.fail(507, {
+      detail: {
+        code: "STORAGE_FULL",
+        message: "Спасибо за ваши фото! Альбом заполнен, новые файлы больше не принимаются."
+      }
+    });
+
+    await expect(resultPromise).rejects.toMatchObject({
+      status: 507,
+      code: "STORAGE_FULL",
+      message: "Спасибо за ваши фото! Альбом заполнен, новые файлы больше не принимаются."
+    });
+  });
+
   it("opens authorized blobs with guest token and object url", async () => {
     setGuestToken("blob-token");
     const blob = new Blob(["image"]);
