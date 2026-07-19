@@ -73,7 +73,8 @@ ls -lt /var/log/wedding-diagnostics/
 Для дня свадьбы стоит настроить внешние проверки из [OPERATIONS.md](./OPERATIONS.md):
 
 - UptimeRobot на `https://event.our-day-dv.ru/events/api/album` с Telegram-алертом.
-- Telegram-алерт, если на диске свободно меньше `5 ГБ`.
+- Telegram-алерт, если на диске свободно меньше `200 МБ`.
+- Backend прекращает новые загрузки при резерве `DISK_FREE_RESERVE_BYTES=209715200` и сохраняет уже загруженные файлы.
 
 ## Текущие production-долги
 
