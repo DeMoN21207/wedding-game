@@ -188,6 +188,8 @@ def test_admin_storage_status_reports_free_space_and_video_capacity(client, monk
     from app.routers import admin as admin_router
 
     gib = 1024 * 1024 * 1024
+    mib = 1024 * 1024
+    reserve = 200 * mib
     video_limit = 300 * 1024 * 1024
     monkeypatch.setattr(
         admin_router.shutil,
@@ -203,9 +205,9 @@ def test_admin_storage_status_reports_free_space_and_video_capacity(client, monk
     assert data["total_bytes"] == 30 * gib
     assert data["used_bytes"] == 8 * gib
     assert data["free_bytes"] == 22 * gib
-    assert data["reserve_bytes"] == 5 * gib
+    assert data["reserve_bytes"] == reserve
     assert data["max_upload_bytes"] == video_limit
-    assert data["estimated_max_video_uploads"] == (17 * gib) // video_limit
+    assert data["estimated_max_video_uploads"] == (22 * gib - reserve) // video_limit
     assert data["is_low_space"] is False
     assert data["warning"] is None
 
@@ -216,10 +218,12 @@ def test_admin_storage_status_warns_when_free_space_is_low(client, monkeypatch):
     from app.routers import admin as admin_router
 
     gib = 1024 * 1024 * 1024
+    mib = 1024 * 1024
+    free = 150 * mib
     monkeypatch.setattr(
         admin_router.shutil,
         "disk_usage",
-        lambda _: SimpleNamespace(total=30 * gib, used=26 * gib, free=4 * gib),
+        lambda _: SimpleNamespace(total=30 * gib, used=30 * gib - free, free=free),
     )
 
     login_admin(client)
@@ -229,7 +233,7 @@ def test_admin_storage_status_warns_when_free_space_is_low(client, monkeypatch):
     data = response.json()
     assert data["is_low_space"] is True
     assert data["estimated_max_video_uploads"] == 0
-    assert "меньше 5 ГБ" in data["warning"]
+    assert "меньше 200 МБ" in data["warning"]
 
 
 def test_admin_can_permanently_delete_trashed_photo_files(client):

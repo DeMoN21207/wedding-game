@@ -73,7 +73,10 @@ def storage_status(settings: Settings) -> AdminStorageOut:
         max_upload_bytes=settings.max_upload_bytes,
         estimated_max_video_uploads=available_for_uploads // max(1, settings.max_upload_bytes),
         is_low_space=is_low_space,
-        warning="Свободно меньше 5 ГБ. Лучше почистить корзину или забрать архив перед новым видео."
+        warning=(
+            f"Свободно меньше {human_size(settings.disk_free_reserve_bytes)}. "
+            "Лучше почистить корзину или забрать архив перед новым видео."
+        )
         if is_low_space
         else None,
     )
