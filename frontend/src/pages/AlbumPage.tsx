@@ -55,6 +55,7 @@ export function AlbumPage({ cameraMode = false }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [lightboxPhoto, setLightboxPhoto] = useState<LightboxPhoto | null>(null);
 
   const loadAlbum = useCallback(async () => {
@@ -128,6 +129,7 @@ export function AlbumPage({ cameraMode = false }: Props) {
   }, []);
 
   const handleNicknameChange = useCallback((nextNickname: string) => {
+    setNicknameError(null);
     setNickname(nextNickname);
   }, []);
 
@@ -138,7 +140,7 @@ export function AlbumPage({ cameraMode = false }: Props) {
       return;
     }
     setSaving(true);
-    setError(null);
+    setNicknameError(null);
     try {
       const guest = await registerGuest(trimmed);
       setGuestToken(guest.guest_token);
@@ -147,7 +149,7 @@ export function AlbumPage({ cameraMode = false }: Props) {
       await loadGuest();
       setNeedsIntro(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось войти.");
+      setNicknameError(err instanceof Error ? err.message : "Не удалось войти.");
     } finally {
       setSaving(false);
     }
@@ -232,7 +234,13 @@ export function AlbumPage({ cameraMode = false }: Props) {
       <MyPhotosSection photos={myPhotos} isLoggedIn={Boolean(me)} onDelete={remove} onOpen={openMyPhoto} />
 
       {needsIntro && (
-        <WelcomeDialog nickname={nickname} saving={saving} onNicknameChange={handleNicknameChange} onSubmit={submitNickname} />
+        <WelcomeDialog
+          nickname={nickname}
+          saving={saving}
+          error={nicknameError}
+          onNicknameChange={handleNicknameChange}
+          onSubmit={submitNickname}
+        />
       )}
 
       <PhotoLightbox photo={lightboxPhoto} onClose={closeLightbox} />

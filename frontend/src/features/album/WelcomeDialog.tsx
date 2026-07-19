@@ -4,6 +4,7 @@ import { memo, type FormEvent } from "react";
 type WelcomeDialogProps = {
   nickname: string;
   saving: boolean;
+  error?: string | null;
   onNicknameChange: (nickname: string) => void;
   onSubmit: (event: FormEvent) => void;
 };
@@ -11,7 +12,7 @@ type WelcomeDialogProps = {
 /**
  * Первый вход гостя: собирает ник и привязывает его к локальной сессии.
  */
-export const WelcomeDialog = memo(function WelcomeDialog({ nickname, saving, onNicknameChange, onSubmit }: WelcomeDialogProps) {
+export const WelcomeDialog = memo(function WelcomeDialog({ nickname, saving, error = null, onNicknameChange, onSubmit }: WelcomeDialogProps) {
   return (
     <div className="welcome-backdrop">
       <form className="welcome-dialog wedding-card" role="dialog" aria-modal="true" onSubmit={onSubmit}>
@@ -27,9 +28,16 @@ export const WelcomeDialog = memo(function WelcomeDialog({ nickname, saving, onN
           autoFocus
           value={nickname}
           maxLength={30}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "guest-nickname-error" : undefined}
           onChange={(event) => onNicknameChange(event.target.value)}
           placeholder="Например, Маша"
         />
+        {error && (
+          <p className="welcome-nickname-error" id="guest-nickname-error" aria-live="polite">
+            {error}
+          </p>
+        )}
         <button className="primary-action wedding-primary" disabled={saving || nickname.trim().length === 0}>
           <Heart size={18} />
           <span>{saving ? "Входим..." : "Войти в альбом"}</span>
