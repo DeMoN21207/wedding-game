@@ -48,13 +48,19 @@ def lock_event_for_guest_registration(db: Session, event: Event) -> Event:
     return db.query(Event).filter(Event.id == event.id).with_for_update().one()
 
 
+def nickname_taken_error():
+    """Сообщает гостю, что нормализованный ник уже используется."""
+
+    return api_error(409, "NICKNAME_TAKEN", "Этот ник уже занят. Придумайте другой.")
+
+
 @router.post("/guests", response_model=GuestCreated, status_code=201)
 def create_guest(
     payload: GuestCreate,
     settings: Settings = Depends(get_app_settings),
     db: Session = Depends(get_db),
 ) -> GuestCreated:
-    """Регистрирует гостя по нику или возвращает существующий токен для этого ника."""
+    """Регистрирует гостя с уникальным внутри события ником."""
 
     if payload.event_token:
         event = db.query(Event).filter(Event.token == payload.event_token).one_or_none()
@@ -71,7 +77,7 @@ def create_guest(
     event = lock_event_for_guest_registration(db, event)
     existing = db.query(Guest).filter(Guest.event_id == event.id, Guest.nickname_norm == nickname_norm).first()
     if existing:
-        return guest_created_out(existing)
+        raise nickname_taken_error()
 
     slug = unique_slug(nickname, lambda candidate: bool(db.query(Guest).filter(Guest.slug == candidate).first()))
     guest = Guest(
@@ -89,8 +95,8 @@ def create_guest(
         db.rollback()
         existing = db.query(Guest).filter(Guest.event_id == event.id, Guest.nickname_norm == nickname_norm).first()
         if existing:
-            return guest_created_out(existing)
-        raise api_error(409, "NICKNAME_TAKEN", "Этот ник уже занят, выберите другой.") from None
+            raise nickname_taken_error() from None
+        raise
     db.refresh(guest)
     return guest_created_out(guest)
 

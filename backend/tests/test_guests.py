@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from conftest import auth_headers, create_event, create_guest
 
 
@@ -28,7 +30,7 @@ def test_public_event_info_is_available_by_token(client):
     }
 
 
-def test_duplicate_nickname_reuses_existing_guest_within_same_event(client):
+def test_duplicate_nickname_is_rejected_within_same_event(client):
     event = create_event(client, "Свадьба")
     first = create_guest(client, event["token"], "Саша")
 
@@ -37,9 +39,31 @@ def test_duplicate_nickname_reuses_existing_guest_within_same_event(client):
         json={"event_token": event["token"], "nickname": " саша "},
     )
 
-    assert response.status_code == 201
-    assert response.json()["guest_token"] == first["guest_token"]
-    assert response.json()["avatar_index"] == first["avatar_index"]
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": {
+            "code": "NICKNAME_TAKEN",
+            "message": "Этот ник уже занят. Придумайте другой.",
+        }
+    }
+    assert first["guest_token"] not in response.text
+
+
+def test_concurrent_duplicate_registration_creates_one_guest(client):
+    event = create_event(client, "Свадьба")
+
+    def register():
+        return client.post(
+            "/api/guests",
+            json={"event_token": event["token"], "nickname": "Одинаковый"},
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        responses = list(executor.map(lambda _: register(), range(2)))
+
+    assert sorted(response.status_code for response in responses) == [201, 409]
+    duplicate = next(response for response in responses if response.status_code == 409)
+    assert duplicate.json()["detail"]["code"] == "NICKNAME_TAKEN"
 
 
 def test_guest_avatars_are_unique_for_first_twenty_then_repeat(client):

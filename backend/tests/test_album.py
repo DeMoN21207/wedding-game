@@ -33,14 +33,19 @@ def test_album_name_can_be_configured_from_environment(tmp_path, monkeypatch):
     assert response.json()["name"] == "Наш лучший день"
 
 
-def test_guest_can_register_without_event_token_and_reuse_same_nickname(client):
+def test_album_rejects_duplicate_nickname_without_event_token(client):
     first = client.post("/api/guests", json={"nickname": " Маша "})
     second = client.post("/api/guests", json={"nickname": "маша"})
 
     assert first.status_code == 201, first.text
-    assert second.status_code == 201, second.text
-    assert second.json()["guest_token"] == first.json()["guest_token"]
-    assert second.json()["nickname"] == "Маша"
+    assert second.status_code == 409, second.text
+    assert second.json() == {
+        "detail": {
+            "code": "NICKNAME_TAKEN",
+            "message": "Этот ник уже занят. Придумайте другой.",
+        }
+    }
+    assert first.json()["guest_token"] not in second.text
 
 
 def test_album_dashboard_shows_recent_photos_and_contributors(client):
