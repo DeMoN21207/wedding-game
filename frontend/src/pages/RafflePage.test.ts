@@ -32,4 +32,11 @@ describe("RafflePage wheel performance structure", () => {
   it("не ставит CSS filter на лампочки колеса", () => {
     expect(raffleStyles).not.toMatch(/\.giveaway-wheel-light\s*\{[^}]*filter:/s);
   });
+
+  it("keeps ordinary participant rows readable while preserving dense mode", () => {
+    expect(raffleStyles).toMatch(/\.giveaway-participants-card:not\(\.is-dense-list\) \.giveaway-participant-row\s*\{[^}]*min-height:\s*48px/s);
+    expect(raffleStyles).toMatch(/\.giveaway-participants-card:not\(\.is-dense-list\) \.giveaway-color-avatar\s*\{[^}]*width:\s*34px[^}]*height:\s*34px/s);
+    expect(raffleStyles).toMatch(/\.giveaway-participants-card:not\(\.is-dense-list\) \.giveaway-participant-copy strong\s*\{[^}]*font-size:\s*0\.9rem/s);
+    expect(pageSource).toContain('visibleParticipants.length > 20 ? " is-dense-list" : ""');
+  });
 });

@@ -1334,15 +1334,15 @@
 
 @media (min-width: 821px) {
   .giveaway-participants-card:not(.is-dense-list) .giveaway-participant-row {
-    min-height: 42px;
-    grid-template-columns: 31px minmax(0, 1fr);
-    gap: 7px;
-    padding: 5px 8px;
+    min-height: 48px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 9px;
+    padding: 6px 9px;
   }
 
   .giveaway-participants-card:not(.is-dense-list) .giveaway-color-avatar {
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
   }
 
   .giveaway-participants-card:not(.is-dense-list) .giveaway-participant-copy {
@@ -1351,12 +1351,12 @@
   }
 
   .giveaway-participants-card:not(.is-dense-list) .giveaway-participant-copy strong {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     line-height: 1.08;
   }
 
   .giveaway-participants-card:not(.is-dense-list) .giveaway-participant-copy small {
-    font-size: 0.66rem;
+    font-size: 0.7rem;
     line-height: 1.05;
   }
 
