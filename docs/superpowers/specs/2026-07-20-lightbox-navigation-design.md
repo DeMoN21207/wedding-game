@@ -18,8 +18,9 @@ Allow guests and administrators to browse the current media collection without c
 
 - `PhotoLightbox` receives a collection of `LightboxPhoto` items, an active index, an index-change callback, and the existing close callback.
 - The component owns interaction mechanics but not page collection state.
+- The component reuses the project's existing `Swiper` dependency with its A11y and Keyboard modules; no new frontend dependency is added.
 - Gallery, album, personal photos, recent admin media, and admin photo grids each open the lightbox with the collection that contains the selected item.
-- Changing the active index remounts video playback so the previous video stops automatically.
+- Changing the active index pauses video elements so playback never continues on a hidden slide.
 
 ## Performance
 
@@ -35,7 +36,6 @@ Allow guests and administrators to browse the current media collection without c
 
 ## Testing
 
-- Component tests cover cyclic index calculation, keyboard navigation, control visibility, and accessible labels.
-- Gesture logic is extracted into a small pure helper and tested at threshold boundaries.
+- Component tests cover the cyclic Swiper configuration, keyboard navigation, control visibility, and accessible labels.
 - Page source tests ensure every lightbox call site supplies a media collection and selected index.
 - Browser checks cover desktop arrows and mobile swipes with mixed image/video collections.
